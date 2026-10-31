@@ -1,0 +1,212 @@
+name: Generate Preview Index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'preview/pages/**'
+      - '.github/workflows/preview-index.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Build preview/index.html from .astro pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate static preview index
+        run: |
+          # Collect all .astro page names, sorted
+          pages=$(find preview/pages -name "*.astro" ! -name "*.xml.ts" ! -name "*.txt.ts" | \
+                  sed 's|preview/pages/||;s|\.astro$||' | sort)
+
+          count=$(echo "$pages" | wc -l)
+
+          # Build category groups
+          marketing_pages=$(echo "$pages" | grep "^marketing/")
+          other_pages=$(echo "$pages" | grep -v "^marketing/")
+
+          # Helper: page → display name
+          display_name() {
+            echo "$1" | sed 's|marketing/||;s|-| |g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}'
+          }
+
+          # Build card HTML for a list of pages
+          cards_html() {
+            local prefix="$1"
+            shift
+            local list=("$@")
+            local out=""
+            for p in "${list[@]}"; do
+              local name
+              name=$(echo "$p" | sed "s|${prefix}||;s|-| |g" | \
+                awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+              local slug="${p}"
+              out+="<a class=\"pc\" href=\"#${slug}\" title=\"${p}.astro\">"
+              out+="<span class=\"pc-name\">${name}</span>"
+              out+="<code class=\"pc-slug\">${p}.astro</code>"
+              out+="</a>"
+            done
+            echo "$out"
+          }
+
+          # Build cards for all pages
+          all_cards=""
+          while IFS= read -r p; do
+            name=$(echo "$p" | sed 's|marketing/||;s|-| |g' | \
+              awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) substr($i,2); print}')
+            cat_class=""; cat_prefix=""
+            if echo "$p" | grep -q "^marketing/"; then cat_class=" pc-mkt"; cat_prefix="Marketing · "; fi
+            if echo "$p" | grep -qE "^(sign|forgot|auth|2-step|onboarding)"; then cat_class=" pc-auth"; fi
+            if echo "$p" | grep -qE "^(dashboard|chart|datagrid|datatables)"; then cat_class=" pc-data"; fi
+            if echo "$p" | grep -qE "^(layout)"; then cat_class=" pc-layout"; fi
+            all_cards+="<a class=\"pc${cat_class}\" href=\"${p}\" title=\"${p}.astro\">"
+            all_cards+="<span class=\"pc-cat\">${cat_prefix}</span>"
+            all_cards+="<span class=\"pc-name\">${name}</span>"
+            all_cards+="<code class=\"pc-slug\">${p}</code>"
+            all_cards+="</a>"
+          done <<< "$pages"
+
+          # Generate the HTML file
+          cat > preview/index.html << HTMLEOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Preview Index — Wikialisalabs (${count} pages)</title>
+            <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+              body{font-family:'Work Sans',system-ui,sans-serif;background:#f7f8fa;color:#1f2328;font-size:14px}
+              nav{position:sticky;top:0;z-index:100;background:#000;padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between}
+              .nav-logo{color:#BEFF6C;font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px}
+              .nav-logo svg{flex-shrink:0}
+              .nav-count{background:#BEFF6C;color:#000;font-size:11px;font-weight:700;padding:2px 10px;border-radius:9999px}
+              .nav-back{color:rgba(255,255,255,.6);font-size:13px;text-decoration:none}
+              .nav-back:hover{color:#fff}
+              .hero{background:#000;color:#fff;padding:48px 32px 40px;border-bottom:3px solid #BEFF6C}
+              .hero h1{font-size:clamp(28px,4vw,48px);font-weight:700;letter-spacing:-1px;margin-bottom:8px}
+              .hero h1 span{color:#BEFF6C}
+              .hero p{color:rgba(255,255,255,.65);font-size:15px;max-width:520px}
+              .filter-bar{padding:20px 32px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:56px;z-index:50}
+              .fb{padding:6px 14px;border:1.5px solid #000;border-radius:9999px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;transition:background .12s}
+              .fb:hover,.fb.active{background:#000;color:#fff}
+              .fb.mkt:hover,.fb.mkt.active{background:#49DBC8;border-color:#49DBC8;color:#000}
+              .fb.auth:hover,.fb.auth.active{background:#AF96FB;border-color:#AF96FB;color:#000}
+              .fb.data:hover,.fb.data.active{background:#FFF172;border-color:#FFF172;color:#000}
+              .fb.layout:hover,.fb.layout.active{background:#FC7339;border-color:#FC7339;color:#000}
+              .search-wrap{margin-left:auto}
+              .search{border:1.5px solid #000;border-radius:9999px;padding:6px 14px;font-size:12px;font-family:inherit;outline:none;width:180px}
+              .search:focus{border-color:#7C5CF6;box-shadow:0 0 0 3px rgba(124,92,246,.12)}
+              .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:24px 32px 48px}
+              .pc{display:flex;flex-direction:column;gap:4px;padding:14px;border:2px solid #000;background:#fff;text-decoration:none;color:#000;border-radius:8px;box-shadow:3px 3px 0 #000;transition:transform .12s,box-shadow .12s}
+              .pc:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 #000}
+              .pc-cat{font-size:9px;font-weight:700;color:#7C5CF6;text-transform:uppercase;letter-spacing:.5px;min-height:12px}
+              .pc-name{font-size:13px;font-weight:700}
+              .pc-slug{font-size:10px;color:#57606a;font-family:monospace;margin-top:2px}
+              .pc-mkt{border-color:#49DBC8;box-shadow:3px 3px 0 #49DBC8}
+              .pc-auth{border-color:#AF96FB;box-shadow:3px 3px 0 #AF96FB}
+              .pc-data{border-color:#FFF172;box-shadow:3px 3px 0 #FFF172}
+              .pc-layout{border-color:#FC7339;box-shadow:3px 3px 0 #FC7339}
+              .pc.hidden{display:none}
+              .legend{display:flex;gap:12px;padding:0 32px 16px;flex-wrap:wrap}
+              .lg{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+              .lg-dot{width:12px;height:12px;border-radius:3px;border:1.5px solid #000}
+              @media(max-width:600px){.grid{padding:16px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}.filter-bar{padding:12px 16px}.hero{padding:32px 16px}}
+            </style>
+          </head>
+          <body>
+            <nav>
+              <div class="nav-logo">
+                <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#BEFF6C"/><path d="M14 4L22 22H6L14 4Z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                Wikialisalabs Preview
+                <span class="nav-count">${count} pages</span>
+              </div>
+              <a class="nav-back" href="../">← Back to Docs</a>
+            </nav>
+
+            <div class="hero">
+              <h1>Component <span>Preview</span> Index</h1>
+              <p>All ${count} Astro preview pages — UI components, layouts, dashboards, and marketing sections for the AXQ Design System.</p>
+            </div>
+
+            <div class="filter-bar" id="filterBar">
+              <button class="fb active" data-filter="all">All (${count})</button>
+              <button class="fb mkt" data-filter="mkt">Marketing</button>
+              <button class="fb auth" data-filter="auth">Auth</button>
+              <button class="fb data" data-filter="data">Data</button>
+              <button class="fb layout" data-filter="layout">Layouts</button>
+              <div class="search-wrap">
+                <input class="search" type="text" id="searchInput" placeholder="Search pages…" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="legend">
+              <div class="lg"><div class="lg-dot" style="background:#49DBC8"></div>Marketing</div>
+              <div class="lg"><div class="lg-dot" style="background:#AF96FB"></div>Auth</div>
+              <div class="lg"><div class="lg-dot" style="background:#FFF172"></div>Data</div>
+              <div class="lg"><div class="lg-dot" style="background:#FC7339"></div>Layouts</div>
+              <div class="lg"><div class="lg-dot" style="background:#fff"></div>General</div>
+            </div>
+
+            <div class="grid" id="grid">
+          ${all_cards}
+            </div>
+
+            <script>
+              const grid = document.getElementById('grid');
+              const cards = [...grid.querySelectorAll('.pc')];
+              const search = document.getElementById('searchInput');
+              const filterBar = document.getElementById('filterBar');
+              let activeFilter = 'all';
+
+              function apply() {
+                const q = search.value.toLowerCase();
+                cards.forEach(c => {
+                  const name = c.querySelector('.pc-name')?.textContent.toLowerCase() || '';
+                  const slug = c.querySelector('.pc-slug')?.textContent.toLowerCase() || '';
+                  const matchQ = !q || name.includes(q) || slug.includes(q);
+                  const matchF = activeFilter === 'all' ||
+                    (activeFilter === 'mkt'    && c.classList.contains('pc-mkt'))    ||
+                    (activeFilter === 'auth'   && c.classList.contains('pc-auth'))   ||
+                    (activeFilter === 'data'   && c.classList.contains('pc-data'))   ||
+                    (activeFilter === 'layout' && c.classList.contains('pc-layout'));
+                  c.classList.toggle('hidden', !(matchQ && matchF));
+                });
+              }
+
+              search.addEventListener('input', apply);
+              filterBar.addEventListener('click', e => {
+                const btn = e.target.closest('[data-filter]');
+                if (!btn) return;
+                activeFilter = btn.dataset.filter;
+                filterBar.querySelectorAll('.fb').forEach(b => b.classList.toggle('active', b === btn));
+                apply();
+              });
+            </script>
+          </body>
+          </html>
+          HTMLEOF
+
+          echo "✅ Generated preview/index.html with ${count} pages"
+
+      - name: Commit preview index
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add preview/index.html
+          if git diff --staged --quiet; then
+            echo "No changes to preview/index.html"
+          else
+            git commit -m "chore(preview): regenerate index.html [skip ci]"
+            git push
+          fi

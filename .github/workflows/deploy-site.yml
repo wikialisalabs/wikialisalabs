@@ -1,0 +1,63 @@
+name: Deploy Site → GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'index.md'
+      - 'preview/index.html'
+      - '.github/workflows/deploy-site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deployment at a time; cancel queued runs but not in-progress
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy site/ to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # site/ is a zero-build static SPA — no npm install needed.
+      # Copy index.md and preview/index.html into the artifact root.
+      - name: Prepare artifact
+        run: |
+          cp index.md site/index.md
+          # Include the preview page index as a subdirectory
+          mkdir -p site/preview
+          if [ -f preview/index.html ]; then
+            cp preview/index.html site/preview/index.html
+            echo "✅ Included preview/index.html"
+          else
+            # Generate a minimal fallback if not yet generated
+            echo '<meta http-equiv="refresh" content="0;url=https://github.com/wikialisalabs/wikialisalabs/tree/main/preview/pages">' > site/preview/index.html
+            echo "⚠️  preview/index.html not found — using redirect fallback"
+          fi
+          echo "Artifact contents:"
+          find site -type f | sort
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
