@@ -1,16 +1,38 @@
 # Cấu hình nút "Sponsor" trên GitHub repository
-# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+# Tài liệu: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+#
+# Chỉ giữ lại các kênh bạn thực sự sử dụng, xóa hoặc comment các dòng còn lại.
 
-# ── GitHub Sponsors ──────────────────────────────────────────────────────────
+# ── Tài khoản GitHub Sponsors (username hoặc org name) ──────────────────────
 github:
-  - wikialisalabs          # Username/org GitHub của dự án AXQ
+  - wikialisalabs   # Thay bằng username GitHub của bạn
+  # - your-org-name        # Hoặc tên tổ chức nếu sponsor qua org
+
+# ── Patreon ─────────────────────────────────────────────────────────────────
+# patreon: your-patreon-username
 
 # ── Open Collective ──────────────────────────────────────────────────────────
-open_collective: wikialisalabs
+# open_collective: your-project-slug
 
-# ── URL tuỳ chỉnh (tối đa 4) ─────────────────────────────────────────────────
-# Polar.sh: bounty cho từng issue cụ thể + subscription
-# Gitcoin: Web3/crypto grant rounds
+# ── Ko-fi ───────────────────────────────────────────────────────────────────
+ko_fi: wikialisalabs
+
+# ── Buy Me a Coffee ─────────────────────────────────────────────────────────
+# buy_me_a_coffee: your-bmac-username
+
+# ── Liberapay ───────────────────────────────────────────────────────────────
+# liberapay: your-liberapay-username
+
+# ── IssueHunt ───────────────────────────────────────────────────────────────
+# issuehunt: your-issuehunt-username
+
+# ── Tofee ───────────────────────────────────────────────────────────────────
+# tofee: your-tofee-username
+
+# ── URL tuỳ chỉnh (tối đa 4 link) ──────────────────────────────────────────
+# Dùng cho: Polar.sh, Gitcoin Grants, Kickstarter, trang donate riêng, v.v.
 custom:
-  - https://polar.sh/wikialisalabs
-  - https://grants.gitcoin.co
+  - https://polar.sh/your-username          # Polar.sh (bounty + subscription)
+  # - https://gitcoin.co/grants/your-grant  # Gitcoin Grants (Web3)
+  # - https://opencollective.com/your-slug  # Open Collective (nếu không dùng trường trên)
+  # - https://your-domain.com/sponsor       # Trang donate tuỳ chỉnh

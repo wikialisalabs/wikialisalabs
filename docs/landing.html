@@ -2787,6 +2787,70 @@
         </div>
     </section>
 
+    <!-- TLP SECURITY -->
+    <section class="section" id="tlp">
+        <div class="container">
+            <div class="section-title">TLP — Traffic Light Protocol</div>
+            <div class="section-sub">Anti-phishing defence layer — every ANS namespace classified by trust level, driving real-time UI behaviour</div>
+
+            <div class="features-grid" style="margin-bottom:32px;">
+                <div class="feature-card" style="border-color:#00D68F; box-shadow:5px 5px 0 #00D68F;">
+                    <div class="feature-icon" style="background:#F0FFF5;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1-8.5 15a12 12 0 0 1-8.5-15a12 12 0 0 0 8.5-3" stroke="#00D68F" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M9 12l2 2l4-4" stroke="#00D68F" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#00997A;">✅ SAFE</h3>
+                    <p style="color:#555;">Namespaces <code>.axq</code> <code>.vrq</code> — allow all transactions. Token: <code style="color:#00997A;">--axq-tlp-safe</code> #00D68F</p>
+                </div>
+                <div class="feature-card" style="border-color:#FFAA00; box-shadow:5px 5px 0 #FFAA00;">
+                    <div class="feature-icon" style="background:#FFFDF2;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 9v4" stroke="#FFAA00" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0" stroke="#FFAA00" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M12 16h.01" stroke="#FFAA00" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#B86E00;">⚠️ CAUTION</h3>
+                    <p style="color:#555;">Namespace <code>.kpx</code> — show DeFi risk disclaimer, require confirmation. Token: <code style="color:#B86E00;">--axq-tlp-caution</code></p>
+                </div>
+                <div class="feature-card" style="border-color:#FF3D71; box-shadow:5px 5px 0 #FF3D71;">
+                    <div class="feature-icon" style="background:#FFF2F2;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="#FF3D71" stroke-width="2"/>
+                            <path d="M15 9l-6 6M9 9l6 6" stroke="#FF3D71" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#B81D5B;">🚫 BLOCKED</h3>
+                    <p style="color:#555;">Raw <code>0x…</code> / unknown TLD — <strong>Sign button permanently disabled</strong>. Token: <code style="color:#B81D5B;">--axq-tlp-blocked</code></p>
+                </div>
+                <div class="feature-card" style="border-color:#2E3A59; box-shadow:5px 5px 0 #2E3A59;">
+                    <div class="feature-icon" style="background:#EDF1F7;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065" stroke="#2E3A59" stroke-width="1.5"/><circle cx="12" cy="12" r="3" stroke="#2E3A59" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#2E3A59;">⚙️ SYSTEM</h3>
+                    <p style="color:#555;">Namespaces <code>.sqx</code> <code>.vpx</code> — hidden from end-user UI. Internal system use only.</p>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <code><span class="code-comment">/* Layer 2 — Semantic TLP tokens */</span>
+<span class="code-prop">--axq-tlp-safe</span>:    <span class="code-val">#00D68F</span><span class="code-comment">; /* → success/500 */</span>
+<span class="code-prop">--axq-tlp-caution</span>: <span class="code-val">#FFAA00</span><span class="code-comment">; /* → warning/500 */</span>
+<span class="code-prop">--axq-tlp-blocked</span>: <span class="code-val">#FF3D71</span><span class="code-comment">; /* → error/500  */</span>
+<span class="code-prop">--axq-tlp-system</span>:  <span class="code-val">#2E3A59</span><span class="code-comment">; /* → grey/400   */</span>
+
+<span class="code-comment">/* Usage */</span>
+<span class="code-prop">const</span> level = resolveTLP(recipientAddress);
+&lt;NamespaceBadge name={addr} level={level} /&gt;
+{level === <span class="code-val">'blocked'</span> &amp;&amp; &lt;SecurityAlert level=<span class="code-val">"blocked"</span> /&gt;}</code>
+            </div>
+        </div>
+    </section>
+
     <!-- COMPONENT INVENTORY -->
     <section class="section section-alt inventory-section" id="inventory">
         <div class="container">

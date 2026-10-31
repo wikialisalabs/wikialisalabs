@@ -1719,14 +1719,15 @@
                 <rect width="28" height="28" rx="8" fill="#BEFF6C" />
                 <path d="M14 4L22 22H6L14 4Z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round" />
             </svg>
-            Community Design System
-            <span class="badge">v1.0</span>
+            AXQ Design System
+            <span class="badge">v6.0</span>
         </div>
         <div class="nav-links">
             <a href="#colors">Colors</a>
             <a href="#typography">Typography</a>
             <a href="#spacing">Spacing</a>
             <a href="#components">Components</a>
+            <a href="#tlp">TLP Security</a>
             <a href="#inventory">Inventory</a>
             <a href="#icons">Icons</a>
             <a href="#zones">Zones</a>
@@ -1762,10 +1763,9 @@
             </svg>
         </div>
 
-        <div class="hero-tag">AxioPass UI Kit</div>
+        <div class="hero-tag">AxioPass UI Kit · v6.0.0</div>
         <h1>AXQ <span>Design System</span><br />Documentation</h1>
-        <p>A complete 3-layer design token system for AxioPass — Banking, Crypto &amp; Web3. 201 components, 6000+
-            icons, Work Sans typography.</p>
+        <p>A complete 3-layer design token system for AxioPass — Banking, Crypto &amp; Web3. React 18 + Next.js 15, TLP anti-phishing security, ANS resolver, 1,897 SVG icons, Work Sans typography.</p>
         <div class="hero-btns">
             <a href="#components" class="btn-primary">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -1787,24 +1787,28 @@
 
         <div class="hero-stats">
             <div class="stat">
-                <div class="stat-num">201</div>
-                <div class="stat-label">Components</div>
+                <div class="stat-num">31+</div>
+                <div class="stat-label">React Components</div>
             </div>
             <div class="stat">
-                <div class="stat-num">6000+</div>
-                <div class="stat-label">Icons</div>
+                <div class="stat-num">1,897</div>
+                <div class="stat-label">SVG Icons</div>
             </div>
             <div class="stat">
                 <div class="stat-num">3</div>
                 <div class="stat-label">Token Layers</div>
             </div>
             <div class="stat">
-                <div class="stat-num">40+</div>
-                <div class="stat-label">iOS Screens</div>
+                <div class="stat-num">4</div>
+                <div class="stat-label">TLP Levels</div>
             </div>
             <div class="stat">
                 <div class="stat-num">8</div>
                 <div class="stat-label">App Zones</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">v6</div>
+                <div class="stat-label">Latest Release</div>
             </div>
         </div>
     </section>
@@ -2072,9 +2076,8 @@
                             <path d="M8 12L11 15L16 9" stroke="#000" stroke-width="2" stroke-linecap="round" />
                         </svg>
                     </div>
-                    <h3>6000+ Icons</h3>
-                    <p>Linear, Bold, Outline, Broken, Bulk, Two-tone. All icons tokenized with size + color primitives.
-                    </p>
+                    <h3>1,897 SVG Icons</h3>
+                    <p>Linear + Bold sets. SVG sprite system, <code>currentColor</code> theming, full size &amp; color token mapping.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" style="background:#EDF1F7;">
@@ -2095,9 +2098,8 @@
                             <path d="M18 3L21 6L18 9" stroke="#000" stroke-width="2" stroke-linecap="round" />
                         </svg>
                     </div>
-                    <h3>201 Components</h3>
-                    <p>Navigation, Inputs, Cards, Buttons, Charts, Crypto-specific, eKYC, Modals, and more. 15 groups
-                        documented.</p>
+                    <h3>31+ React Components</h3>
+                    <p>Button, Input, Modal, Toast, OTPInput, Crypto suite, TLP security alerts — React 18, TypeScript, a11y-first.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon" style="background:#EDF1F7;">
@@ -2785,25 +2787,89 @@
         </div>
     </section>
 
+    <!-- TLP SECURITY -->
+    <section class="section" id="tlp">
+        <div class="container">
+            <div class="section-title">TLP — Traffic Light Protocol</div>
+            <div class="section-sub">Anti-phishing defence layer — every ANS namespace classified by trust level, driving real-time UI behaviour</div>
+
+            <div class="features-grid" style="margin-bottom:32px;">
+                <div class="feature-card" style="border-color:#00D68F; box-shadow:5px 5px 0 #00D68F;">
+                    <div class="feature-icon" style="background:#F0FFF5;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1-8.5 15a12 12 0 0 1-8.5-15a12 12 0 0 0 8.5-3" stroke="#00D68F" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M9 12l2 2l4-4" stroke="#00D68F" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#00997A;">✅ SAFE</h3>
+                    <p style="color:#555;">Namespaces <code>.axq</code> <code>.vrq</code> — allow all transactions. Token: <code style="color:#00997A;">--axq-tlp-safe</code> #00D68F</p>
+                </div>
+                <div class="feature-card" style="border-color:#FFAA00; box-shadow:5px 5px 0 #FFAA00;">
+                    <div class="feature-icon" style="background:#FFFDF2;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 9v4" stroke="#FFAA00" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0" stroke="#FFAA00" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M12 16h.01" stroke="#FFAA00" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#B86E00;">⚠️ CAUTION</h3>
+                    <p style="color:#555;">Namespace <code>.kpx</code> — show DeFi risk disclaimer, require confirmation. Token: <code style="color:#B86E00;">--axq-tlp-caution</code></p>
+                </div>
+                <div class="feature-card" style="border-color:#FF3D71; box-shadow:5px 5px 0 #FF3D71;">
+                    <div class="feature-icon" style="background:#FFF2F2;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="9" stroke="#FF3D71" stroke-width="2"/>
+                            <path d="M15 9l-6 6M9 9l6 6" stroke="#FF3D71" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#B81D5B;">🚫 BLOCKED</h3>
+                    <p style="color:#555;">Raw <code>0x…</code> / unknown TLD — <strong>Sign button permanently disabled</strong>. Token: <code style="color:#B81D5B;">--axq-tlp-blocked</code></p>
+                </div>
+                <div class="feature-card" style="border-color:#2E3A59; box-shadow:5px 5px 0 #2E3A59;">
+                    <div class="feature-icon" style="background:#EDF1F7;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065" stroke="#2E3A59" stroke-width="1.5"/><circle cx="12" cy="12" r="3" stroke="#2E3A59" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <h3 style="color:#2E3A59;">⚙️ SYSTEM</h3>
+                    <p style="color:#555;">Namespaces <code>.sqx</code> <code>.vpx</code> — hidden from end-user UI. Internal system use only.</p>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <code><span class="code-comment">/* Layer 2 — Semantic TLP tokens */</span>
+<span class="code-prop">--axq-tlp-safe</span>:    <span class="code-val">#00D68F</span><span class="code-comment">; /* → success/500 */</span>
+<span class="code-prop">--axq-tlp-caution</span>: <span class="code-val">#FFAA00</span><span class="code-comment">; /* → warning/500 */</span>
+<span class="code-prop">--axq-tlp-blocked</span>: <span class="code-val">#FF3D71</span><span class="code-comment">; /* → error/500  */</span>
+<span class="code-prop">--axq-tlp-system</span>:  <span class="code-val">#2E3A59</span><span class="code-comment">; /* → grey/400   */</span>
+
+<span class="code-comment">/* Usage */</span>
+<span class="code-prop">const</span> level = resolveTLP(recipientAddress);
+&lt;NamespaceBadge name={addr} level={level} /&gt;
+{level === <span class="code-val">'blocked'</span> &amp;&amp; &lt;SecurityAlert level=<span class="code-val">"blocked"</span> /&gt;}</code>
+            </div>
+        </div>
+    </section>
+
     <!-- COMPONENT INVENTORY -->
     <section class="section section-alt inventory-section" id="inventory">
         <div class="container">
-            <div class="section-title">Component Inventory — 201 Components</div>
-            <div class="section-sub">15 groups · ⚡ 72 Critical · 🔵 79 Medium · ⬜ 50 Low priority</div>
+            <div class="section-title">Component Inventory — v6.0.0</div>
+            <div class="section-sub">31+ React components shipped · 8 crypto-specific · 4 TLP security · Full a11y WCAG 2.1 AA</div>
 
-            <!-- Priority Progress -->
+            <!-- v6 Phase Progress -->
             <div style="max-width:480px; margin-bottom:40px;">
-                <div class="progress-label"><span>⚡ Critical — Phase 1–2</span><span>72 / 201</span></div>
+                <div class="progress-label"><span>✅ Phase 0–1 — Foundation + Core (11)</span><span>11 / 31</span></div>
                 <div class="progress-bar-wrap">
-                    <div class="progress-bar-fill" style="width:36%; background:var(--brand-teal);"></div>
+                    <div class="progress-bar-fill" style="width:35%; background:var(--brand-teal);"></div>
                 </div>
-                <div class="progress-label"><span>🔵 Medium — Phase 3</span><span>79 / 201</span></div>
+                <div class="progress-label"><span>✅ Phase 2 — Advanced + Crypto (20)</span><span>20 / 31</span></div>
                 <div class="progress-bar-wrap">
-                    <div class="progress-bar-fill" style="width:39%; background:var(--brand-purple);"></div>
+                    <div class="progress-bar-fill" style="width:65%; background:var(--brand-purple);"></div>
                 </div>
-                <div class="progress-label"><span>⬜ Low — Phase 4+</span><span>50 / 201</span></div>
+                <div class="progress-label"><span>✅ Phase 3 — Quality + Release</span><span>100%</span></div>
                 <div class="progress-bar-wrap">
-                    <div class="progress-bar-fill" style="width:25%; background:var(--gs-400);"></div>
+                    <div class="progress-bar-fill" style="width:100%; background:var(--brand-green);"></div>
                 </div>
             </div>
 
@@ -2992,7 +3058,7 @@
     <!-- ICONS -->
     <section class="section" id="icons">
         <div class="container">
-            <div class="section-title">Icon System — 6000+</div>
+            <div class="section-title">Icon System — 1,897 SVG</div>
             <div class="section-sub">Linear · Bold · Outline · Broken · Bulk · Two-tone — all with token size &amp;
                 color</div>
             <div class="icon-grid">
@@ -4419,9 +4485,7 @@
     <footer>
         <div style="max-width:760px; margin:0 auto;">
             <div style="border-top:1px solid rgba(255,255,255,0.12); padding-top:24px;">
-                <strong>Community Design System</strong> · AxioPass UI Kit · v1.0 · iOS-first FinTech &amp; Crypto ·
-                Work Sans
-                · 8px Grid
+                <strong>AXQ Design System</strong> · AxioPass UI Kit · v6.0.0 · React 18 · TLP Security · 1,897 Icons · Work Sans
                 <br /><br />
                 <span style="font-size:11px;">Made with IBM Bob</span>
             </div>
