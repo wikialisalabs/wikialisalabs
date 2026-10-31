@@ -1,0 +1,121 @@
+/* =============================================================
+   Card — CSS Module
+   Spec: Layer 3 component tokens — card/*
+   ============================================================= */
+
+.card {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+  padding:        24px;
+  background:     var(--color-surface-default);
+  border-radius:  var(--radius-lg);   /* 16px */
+  overflow:       hidden;
+  transition:
+    background  150ms ease,
+    box-shadow  150ms ease,
+    transform   100ms ease;
+}
+
+/* ── Border / Elevation ──────────────────────────────────────── */
+.bordered {
+  border: 1px solid var(--color-border-default);
+}
+
+.elevated {
+  border:     none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Compact ─────────────────────────────────────────────────── */
+.compact {
+  padding: 16px;
+  gap:     8px;
+}
+
+/* ── Clickable ───────────────────────────────────────────────── */
+.clickable {
+  cursor:         pointer;
+  user-select:    none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.clickable:hover {
+  background:  var(--color-surface-raised);
+  transform:   translateY(-1px);
+  box-shadow:  0 4px 12px rgba(0, 0, 0, 0.10);
+}
+
+.clickable:active {
+  transform:  translateY(0) scale(0.995);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.clickable:focus-visible {
+  outline:        2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.header {
+  display:     flex;
+  align-items: flex-start;
+  gap:         8px;
+}
+
+.headerText {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  flex:           1 1 auto;
+  min-width:      0;
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+/* ── Text ────────────────────────────────────────────────────── */
+.title {
+  margin:         0;
+  font-family:    var(--font-family-base);
+  font-size:      var(--font-size-h6);           /* 20px */
+  line-height:    var(--line-height-h6);
+  font-weight:    var(--font-weight-semibold);
+  color:          var(--color-text-primary);
+  white-space:    nowrap;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+}
+
+.description {
+  margin:         0;
+  font-size:      var(--font-size-b2);           /* 14px */
+  line-height:    var(--line-height-b2);
+  font-weight:    var(--font-weight-regular);
+  color:          var(--color-text-secondary);
+}
+
+.metadata {
+  margin:         0;
+  font-size:      var(--font-size-caption);      /* 12px */
+  line-height:    var(--line-height-caption);
+  color:          var(--color-text-secondary);
+  letter-spacing: var(--letter-spacing-caption);
+}
+
+/* ── Body ────────────────────────────────────────────────────── */
+.body {
+  flex:    1 1 auto;
+  min-height: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.footer {
+  padding-top:  12px;
+  border-top:   1px solid var(--color-border-default);
+}
+
+.compact .footer {
+  padding-top: 8px;
+}

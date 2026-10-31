@@ -1,0 +1,98 @@
+/* ── BalanceDisplay ──────────────────────────────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.label {
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium, 500);
+}
+.toggleBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon-secondary);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 150ms;
+}
+.toggleBtn:hover { color: var(--color-text-primary); }
+.toggleBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.fiatRow { line-height: 1; }
+.fiatAmount {
+  font-family: var(--font-family-numeric);
+  font-size: var(--font-size-h2, 60px);
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: var(--letter-spacing-h2, -0.5px);
+  color: var(--color-text-primary);
+  transition: opacity 200ms;
+}
+
+.cryptoEquiv {
+  font-size: var(--font-size-b2, 14px);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-numeric);
+}
+
+/* Quick actions row */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.actionBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-md, 10px);
+  transition: background 150ms;
+  min-width: 56px;
+}
+.actionBtn:hover:not(:disabled) { background: var(--color-surface-raised); }
+.actionBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.actionBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.actionIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+}
+.actionLabel {
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+}

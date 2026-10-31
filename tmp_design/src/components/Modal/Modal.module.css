@@ -1,0 +1,225 @@
+/* ──────────────────────────────────────────────────────────────
+   Modal & BottomSheet — CSS Module
+   ────────────────────────────────────────────────────────────── */
+
+/* ─── Modal Overlay ──────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-background-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeOverlay 180ms ease-out;
+}
+
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Modal Panel ────────────────────────────────────────────── */
+.modal {
+  background: var(--color-surface-overlay);
+  border-radius: var(--radius-xl, 20px);
+  padding: 24px;
+  width: 320px;
+  max-width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  outline: none;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
+  animation: scaleIn 200ms ease-out;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Modal Header ───────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 32px;
+  margin-bottom: 16px;
+}
+
+.variantIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-h6, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1.4;
+  color: var(--color-text-primary);
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--color-icon-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms, background 150ms;
+}
+.closeBtn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-raised);
+}
+.closeBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ─── Modal Body ─────────────────────────────────────────────── */
+.body {
+  font-size: var(--font-size-b2, 14px);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+
+.body:empty {
+  display: none;
+  margin-bottom: 0;
+}
+
+/* ─── Modal Footer ───────────────────────────────────────────── */
+.footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.footerBtn {
+  min-width: 80px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-md, 10px);
+  font-size: var(--font-size-button-medium, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 150ms, background 150ms;
+}
+.footerBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.footerBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.footerBtnSecondary {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+}
+.footerBtnSecondary:hover:not(:disabled) {
+  background: var(--color-border-default);
+}
+
+.footerBtnPrimary {
+  background: var(--color-brand-blue, #0095FF);
+  color: #FFFFFF;
+}
+.footerBtnPrimary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+/* ─── Spinner ────────────────────────────────────────────────── */
+.spinner {
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bottom Sheet
+   ═══════════════════════════════════════════════════════════════ */
+
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-background-overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeOverlay 180ms ease-out;
+}
+
+.sheet {
+  background: var(--color-surface-overlay);
+  border-radius: var(--radius-xl, 20px) var(--radius-xl, 20px) 0 0;
+  padding: 16px 20px 32px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  outline: none;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  animation: slideUp 300ms ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ─── Drag Handle ────────────────────────────────────────────── */
+.handle {
+  width: 32px;
+  height: 4px;
+  background: var(--color-border-strong);
+  border-radius: var(--radius-pill, 9999px);
+  margin: 0 auto 16px;
+  cursor: grab;
+}
+.handle:active {
+  cursor: grabbing;
+}
+
+/* ─── Sheet Header ───────────────────────────────────────────── */
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sheetTitle {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-h6, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary);
+}
+
+.sheetContent {
+  /* slots any children */
+}
+
+/* ─── Dark Mode ──────────────────────────────────────────────── */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .sheet {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.50);
+}

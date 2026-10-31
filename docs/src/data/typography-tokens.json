@@ -1,0 +1,53 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$metadata": {
+    "name": "Axioledger Typography Tokens",
+    "version": "1.0.0"
+  },
+  "font": {
+    "family": {
+      "base":    { "$value": "'Work Sans', sans-serif", "$type": "fontFamily" },
+      "numeric": { "$value": "'Work Sans', monospace",  "$type": "fontFamily" }
+    },
+    "weight": {
+      "regular":  { "$value": 400, "$type": "fontWeight" },
+      "medium":   { "$value": 500, "$type": "fontWeight" },
+      "semibold": { "$value": 600, "$type": "fontWeight" }
+    }
+  },
+  "typography": {
+    "headline": {
+      "h1": { "$value": { "fontSize": "96px", "lineHeight": "112px", "letterSpacing": "-1.5px" }, "$type": "typography" },
+      "h2": { "$value": { "fontSize": "60px", "lineHeight": "72px",  "letterSpacing": "-0.5px" }, "$type": "typography" },
+      "h3": { "$value": { "fontSize": "48px", "lineHeight": "60px",  "letterSpacing": "0px"    }, "$type": "typography" },
+      "h4": { "$value": { "fontSize": "34px", "lineHeight": "44px",  "letterSpacing": "0.25px" }, "$type": "typography" },
+      "h5": { "$value": { "fontSize": "24px", "lineHeight": "32px",  "letterSpacing": "0px"    }, "$type": "typography" },
+      "h6": { "$value": { "fontSize": "20px", "lineHeight": "28px",  "letterSpacing": "0.15px" }, "$type": "typography" }
+    },
+    "subtitle": {
+      "s1": { "$value": { "fontSize": "16px", "lineHeight": "24px", "letterSpacing": "0.15px" }, "$type": "typography" },
+      "s2": { "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.1px"  }, "$type": "typography" }
+    },
+    "body": {
+      "b1":      { "$value": { "fontSize": "16px", "lineHeight": "24px", "letterSpacing": "0.5px"  }, "$type": "typography" },
+      "b2":      { "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.25px" }, "$type": "typography" },
+      "caption": { "$value": { "fontSize": "12px", "lineHeight": "16px", "letterSpacing": "0.4px"  }, "$type": "typography" },
+      "overline":{ "$value": { "fontSize": "10px", "lineHeight": "16px", "letterSpacing": "1.5px"  }, "$type": "typography" }
+    },
+    "button": {
+      "giant":  { "$value": { "fontSize": "20px", "lineHeight": "28px", "letterSpacing": "0.15px" }, "$type": "typography" },
+      "large":  { "$value": { "fontSize": "16px", "lineHeight": "24px", "letterSpacing": "0.15px" }, "$type": "typography" },
+      "medium": { "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.15px" }, "$type": "typography" },
+      "small":  { "$value": { "fontSize": "12px", "lineHeight": "16px", "letterSpacing": "0.15px" }, "$type": "typography" }
+    },
+    "numeric": {
+      "large":  { "$value": { "fontSize": "24px", "lineHeight": "32px", "letterSpacing": "-0.5px"  }, "$type": "typography" },
+      "medium": { "$value": { "fontSize": "16px", "lineHeight": "24px", "letterSpacing": "-0.25px" }, "$type": "typography" },
+      "small":  { "$value": { "fontSize": "12px", "lineHeight": "16px", "letterSpacing": "0px"     }, "$type": "typography" }
+    },
+    "link": {
+      "regular": { "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.25px", "textDecoration": "underline" }, "$type": "typography" },
+      "medium":  { "$value": { "fontSize": "14px", "lineHeight": "20px", "letterSpacing": "0.25px", "textDecoration": "underline" }, "$type": "typography" }
+    }
+  }
+}

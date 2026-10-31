@@ -1,0 +1,141 @@
+/* ── Shared: Checkbox + RadioButton ─────────────────────────── */
+
+.wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wrapper[data-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.wrapper[data-disabled="true"] .label {
+  cursor: not-allowed;
+}
+
+/* Visually hidden real input */
+.input,
+.radioInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Checkbox box ────────────────────────────────────────────── */
+.box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms, border-color 150ms;
+  color: #FFFFFF;
+}
+
+/* Checked state */
+.input:checked + .box {
+  background: var(--color-status-info-default, #0095FF);
+  border-color: var(--color-status-info-default, #0095FF);
+}
+.input:checked + .box svg { display: block; }
+.box svg { display: none; }
+
+/* Indeterminate */
+.box[data-indeterminate="true"] {
+  background: var(--color-status-info-default, #0095FF);
+  border-color: var(--color-status-info-default, #0095FF);
+}
+.box[data-indeterminate="true"] svg { display: block; }
+
+/* Error */
+.box[data-error="true"] {
+  border-color: var(--color-border-error, #FF3D71);
+}
+.input:checked + .box[data-error="true"] {
+  background: var(--color-status-error-default, #FF3D71);
+  border-color: var(--color-status-error-default, #FF3D71);
+}
+
+/* Focus-visible ring on the custom box */
+.input:focus-visible + .box {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Radio mark ──────────────────────────────────────────────── */
+.radioMark {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 150ms;
+}
+
+.radioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-status-info-default, #0095FF);
+  transform: scale(0);
+  transition: transform 150ms;
+}
+
+.radioInput:checked + .radioMark {
+  border-color: var(--color-status-info-default, #0095FF);
+}
+.radioInput:checked + .radioMark .radioDot {
+  transform: scale(1);
+}
+.radioMark[data-error="true"] {
+  border-color: var(--color-border-error, #FF3D71);
+}
+.radioInput:checked + .radioMark[data-error="true"] {
+  border-color: var(--color-status-error-default, #FF3D71);
+}
+.radioInput:checked + .radioMark[data-error="true"] .radioDot {
+  background: var(--color-status-error-default, #FF3D71);
+}
+
+.radioInput:focus-visible + .radioMark {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Label text + helper ─────────────────────────────────────── */
+.labelText {
+  font-size: var(--font-size-b2, 14px);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.helper {
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-text-secondary);
+  padding-left: 28px; /* align under label text */
+}
+.helperError {
+  color: var(--color-status-error-default, #FF3D71);
+}

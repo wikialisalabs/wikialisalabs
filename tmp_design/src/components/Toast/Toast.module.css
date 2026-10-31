@@ -1,0 +1,124 @@
+/* ──────────────────────────────────────────────────────────────
+   Toast & ToastContainer — CSS Module
+   ────────────────────────────────────────────────────────────── */
+
+/* ─── Container ──────────────────────────────────────────────── */
+.container {
+  position: fixed;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none; /* children re-enable */
+}
+
+/* Position variants */
+.container[data-position="bottom-center"] {
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+.container[data-position="top-right"] {
+  top: 24px;
+  right: 24px;
+  align-items: flex-end;
+}
+.container[data-position="top-center"] {
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+
+/* ─── Single Toast ───────────────────────────────────────────── */
+.toast {
+  pointer-events: all;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 480px;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--color-surface-overlay);
+  border: 1px solid var(--color-border-default);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  font-size: var(--font-size-b2, 14px);
+  color: var(--color-text-primary);
+  animation: toastIn 200ms ease-out;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Variant accent colors ──────────────────────────────────── */
+.toast[data-variant="success"] { border-color: var(--color-status-success, #00D68F); }
+.toast[data-variant="error"]   { border-color: var(--color-status-error,   #FF3D71); }
+.toast[data-variant="warning"] { border-color: var(--color-status-warning, #FFAA00); }
+.toast[data-variant="info"]    { border-color: var(--color-status-info,    #0095FF); }
+
+/* ─── Icon ───────────────────────────────────────────────────── */
+.icon {
+  flex-shrink: 0;
+}
+.icon[data-variant="success"] { color: var(--color-status-success, #00D68F); }
+.icon[data-variant="error"]   { color: var(--color-status-error,   #FF3D71); }
+.icon[data-variant="warning"] { color: var(--color-status-warning, #FFAA00); }
+.icon[data-variant="info"]    { color: var(--color-status-info,    #0095FF); }
+
+/* ─── Message ────────────────────────────────────────────────── */
+.message {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Action button ──────────────────────────────────────────── */
+.actionBtn {
+  flex-shrink: 0;
+  padding: 0 8px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-link);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.actionBtn:hover {
+  background: var(--color-surface-raised);
+}
+.actionBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ─── Dismiss button ─────────────────────────────────────────── */
+.dismissBtn {
+  flex-shrink: 0;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-icon-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms, background 150ms;
+}
+.dismissBtn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-raised);
+}
+.dismissBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

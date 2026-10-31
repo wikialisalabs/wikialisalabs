@@ -1,0 +1,112 @@
+/* =============================================================
+   Toggle — CSS Module
+   Spec: Layer 3 component tokens — toggle/*
+   Implemented as role="switch" button for full a11y control.
+   ============================================================= */
+
+/* ── Wrapper (label + track row) ────────────────────────────── */
+.wrapper {
+  display:     inline-flex;
+  align-items: center;
+  gap:         10px;
+  cursor:      pointer;
+}
+
+.wrapper.labelLeft {
+  flex-direction: row-reverse;
+}
+
+/* ── Label ───────────────────────────────────────────────────── */
+.label {
+  font-family:  var(--font-family-base);
+  font-size:    var(--font-size-b2);       /* 14px */
+  line-height:  var(--line-height-b2);
+  color:        var(--color-text-primary);
+  cursor:       pointer;
+  user-select:  none;
+}
+
+.labelDisabled {
+  color: var(--color-text-disabled);
+}
+
+/* ── Track ───────────────────────────────────────────────────── */
+.track {
+  position:        relative;
+  display:         inline-flex;
+  align-items:     center;
+  flex-shrink:     0;
+  border:          none;
+  border-radius:   9999px;
+  background:      var(--color-surface-raised);
+  padding:         3px;
+  cursor:          pointer;
+  transition:      background 200ms ease;
+  outline:         none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Sizes ───────────────────────────────────────────────────── */
+.size-medium {
+  width:  44px;
+  height: 24px;
+}
+
+.size-small {
+  width:  36px;
+  height: 20px;
+}
+
+/* ── Checked (active) ────────────────────────────────────────── */
+.checked {
+  background: var(--color-status-success-default);   /* #00D68F */
+}
+
+/* ── Disabled ────────────────────────────────────────────────── */
+.disabled {
+  background:     var(--color-border-default);
+  cursor:         not-allowed;
+  pointer-events: none;
+}
+
+.disabled .thumb {
+  background: var(--color-text-disabled);
+  box-shadow: none;
+}
+
+/* ── Focus ring ──────────────────────────────────────────────── */
+.track:focus-visible {
+  outline:        2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Thumb ───────────────────────────────────────────────────── */
+.thumb {
+  display:       block;
+  border-radius: 9999px;
+  background:    #FFFFFF;                            /* always white — intentional */
+  box-shadow:    0 1px 3px rgba(0, 0, 0, 0.20);
+  transition:    transform 200ms ease;
+  flex-shrink:   0;
+  pointer-events: none;
+}
+
+/* Thumb sizes */
+.size-medium .thumb {
+  width:  18px;
+  height: 18px;
+}
+
+.size-small .thumb {
+  width:  14px;
+  height: 14px;
+}
+
+/* Thumb slide — off → on */
+.size-medium.checked .thumb { transform: translateX(20px); }
+.size-small.checked  .thumb { transform: translateX(16px); }
+
+/* ── Dark mode ───────────────────────────────────────────────── */
+/* Tokens auto-update via [data-theme="dark"] in variables.css.
+   Only override the hardcoded white thumb: keep it white in dark mode too
+   (thumb is always white regardless of theme — correct per spec). */

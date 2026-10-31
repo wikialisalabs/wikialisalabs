@@ -1,0 +1,129 @@
+name: Build & Validate Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'tmp_design/**'
+      - 'preview/pages/**'
+      - '.github/workflows/build-docs.yml'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-docs:
+    name: Validate docs/ structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          set -e
+          required=(
+            "docs/index.html"
+            "docs/landing.html"
+            "docs/src/router/index.js"
+            "docs/src/style/shell.css"
+            "docs/src/style/pages.css"
+            "docs/src/style/tokens-primitive.css"
+            "docs/src/style/tokens-semantic.css"
+            "docs/src/style/tokens-component.css"
+            "docs/src/content/overview.md"
+            "docs/src/content/tokens.md"
+            "docs/src/content/icons.md"
+            "docs/src/content/components.md"
+            "docs/src/content/tlp.md"
+            "docs/src/content/changelog.md"
+            "docs/src/pages/tlp.js"
+            "docs/src/pages/guidelines.js"
+            "docs/src/pages/changelog.js"
+          )
+          failed=0
+          for f in "${required[@]}"; do
+            if [ -f "$f" ]; then
+              echo "✅ $f"
+            else
+              echo "❌ Missing: $f"
+              failed=$((failed+1))
+            fi
+          done
+          if [ "$failed" -gt 0 ]; then
+            echo "$failed required file(s) missing"
+            exit 1
+          fi
+
+      - name: Check all content .md files have frontmatter
+        run: |
+          failed=0
+          for f in docs/src/content/*.md; do
+            if ! head -1 "$f" | grep -q "^---"; then
+              echo "❌ Missing frontmatter: $f"
+              failed=$((failed+1))
+            else
+              echo "✅ $f"
+            fi
+          done
+          if [ $failed -gt 0 ]; then
+            echo "$failed file(s) missing frontmatter"
+            exit 1
+          fi
+
+      - name: Check JS pages export render()
+        run: |
+          failed=0
+          for f in docs/src/pages/*.js; do
+            if ! grep -q "export.*function render\|export async function render" "$f"; then
+              echo "❌ Missing render() export: $f"
+              failed=$((failed+1))
+            else
+              echo "✅ $(basename $f)"
+            fi
+          done
+          if [ $failed -gt 0 ]; then exit 1; fi
+
+      - name: Check router contains all required routes
+        run: |
+          router="docs/src/router/index.js"
+          required_routes=("/" "/tokens" "/icons" "/components" "/tlp" "/guidelines" "/changelog" "/zones")
+          failed=0
+          for route in "${required_routes[@]}"; do
+            if grep -qF "'${route}'" "$router" || grep -qF "\"${route}\"" "$router"; then
+              echo "✅ route ${route}"
+            else
+              echo "❌ route ${route} missing from router"
+              failed=$((failed+1))
+            fi
+          done
+          if [ "$failed" -gt 0 ]; then exit 1; fi
+
+      - name: Check token CSS files have :root block
+        run: |
+          for f in docs/src/style/tokens-primitive.css docs/src/style/tokens-semantic.css docs/src/style/tokens-component.css; do
+            if grep -q ":root" "$f"; then
+              echo "✅ $f has :root"
+            else
+              echo "❌ $f missing :root block"
+              exit 1
+            fi
+          done
+
+      - name: Count content files
+        run: |
+          md_count=$(find docs/src/content -name "*.md" | wc -l)
+          page_count=$(find docs/src/pages -name "*.js" | wc -l)
+          echo "📄 Markdown content files: $md_count"
+          echo "📦 Page JS modules: $page_count"
+          echo "### ✅ Build & Validate Docs passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Content .md files | $md_count |" >> $GITHUB_STEP_SUMMARY
+          echo "| Page modules | $page_count |" >> $GITHUB_STEP_SUMMARY
+          echo "| Preview .astro pages | $(find preview/pages -name '*.astro' | wc -l) |" >> $GITHUB_STEP_SUMMARY

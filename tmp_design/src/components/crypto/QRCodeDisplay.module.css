@@ -1,0 +1,83 @@
+/* ── QRCodeDisplay ───────────────────────────────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+.qrContainer {
+  padding: 16px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  line-height: 0;
+}
+
+/* Skeleton shimmer for loading state */
+.qrSkeleton {
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--color-surface-raised) 25%, var(--color-border-default) 50%, var(--color-surface-raised) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.coinName {
+  margin: 0;
+  font-size: var(--font-size-b1, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary);
+}
+
+.address {
+  margin: 0;
+  font-family: var(--font-family-numeric);
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.copyBtn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-btn-medium, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.copyBtn:hover { background: var(--color-surface-raised); }
+
+.shareBtn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-md, 10px);
+  border: none;
+  background: transparent;
+  color: var(--color-text-link);
+  font-size: var(--font-size-btn-medium, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition: opacity 150ms;
+}
+.shareBtn:hover { opacity: 0.75; }
+
+.copyBtn:focus-visible,
+.shareBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

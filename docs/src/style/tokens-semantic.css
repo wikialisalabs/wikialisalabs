@@ -1,0 +1,230 @@
+/* =============================================================
+   AXQ Design System — Layer 2: Semantic Tokens
+   All values alias to Primitive layer. Never hardcode hex here.
+   Supports Light Mode (default) + Dark Mode override.
+
+   Naming: --axq-<category>-<role>
+   Depends on: tokens/primitive.css
+   ============================================================= */
+
+/* ── Light Mode (default) ──────────────────────────────────── */
+:root {
+
+  /* ── Color / Text ──────────────────────────────────────────── */
+  --axq-color-text-primary:   var(--axq-p-grey-500);    /* #222B45 */
+  --axq-color-text-secondary: var(--axq-p-grey-400);    /* #2E3A59 */
+  --axq-color-text-disabled:  var(--axq-p-grey-300);    /* #8F9BB3 */
+  --axq-color-text-inverse:   var(--axq-p-white);       /* #FFFFFF — on dark fills */
+  --axq-color-text-brand:     var(--axq-p-grey-900);    /* #000000 */
+  --axq-color-text-link:      var(--axq-p-blue-500);    /* #0095FF */
+  --axq-color-text-on-color:  var(--axq-p-white);       /* on colored surfaces */
+
+  /* ── Color / Background ────────────────────────────────────── */
+  --axq-color-bg-surface:   var(--axq-p-white);         /* #FFFFFF */
+  --axq-color-bg-primary:   var(--axq-p-white);
+  --axq-color-bg-secondary: var(--axq-p-grey-50);       /* #EDF1F7 */
+  --axq-color-bg-brand:     var(--axq-p-grey-900);      /* #000000 */
+  --axq-color-bg-disabled:  var(--axq-p-grey-100);      /* #E4E9F2 */
+  --axq-color-bg-tertiary:  var(--axq-p-grey-100);
+
+  /* ── Color / Surface ───────────────────────────────────────── */
+  --axq-color-surface-default:  var(--axq-p-white);
+  --axq-color-surface-raised:   var(--axq-p-grey-50);
+  --axq-color-surface-overlay:  var(--axq-p-white);
+  --axq-color-surface-sunken:   var(--axq-p-grey-50);
+
+  /* ── Color / Border ────────────────────────────────────────── */
+  --axq-color-border-default:  var(--axq-p-grey-100);   /* #E4E9F2 */
+  --axq-color-border-strong:   var(--axq-p-grey-200);   /* #C5CEE0 */
+  --axq-color-border-subtle:   var(--axq-p-grey-50);    /* #EDF1F7 */
+  --axq-color-border-focus:    var(--axq-p-blue-500);   /* #0095FF */
+  --axq-color-border-error:    var(--axq-p-red-500);    /* #FF3D71 */
+  --axq-color-border-disabled: var(--axq-p-grey-200);
+
+  /* ── Color / Icon ──────────────────────────────────────────── */
+  --axq-color-icon-primary:   var(--axq-p-grey-500);
+  --axq-color-icon-secondary: var(--axq-p-grey-400);
+  --axq-color-icon-disabled:  var(--axq-p-grey-300);
+  --axq-color-icon-inverse:   var(--axq-p-white);
+  --axq-color-icon-brand:     var(--axq-p-grey-900);
+
+  /* ── Color / Status ────────────────────────────────────────── */
+  --axq-color-status-info:            var(--axq-p-blue-500);    /* #0095FF */
+  --axq-color-status-info-bg:         #F2F8FF;
+  --axq-color-status-info-text:       #0057C2;
+  --axq-color-status-info-subtle:     rgba(0, 149, 255, 0.12);
+
+  --axq-color-status-success:         var(--axq-p-green-500);   /* #00D68F */
+  --axq-color-status-success-bg:      #F0FFF5;
+  --axq-color-status-success-text:    #00997A;
+  --axq-color-status-success-subtle:  rgba(0, 214, 143, 0.12);
+
+  --axq-color-status-warning:         var(--axq-p-yellow-500);  /* #FFAA00 */
+  --axq-color-status-warning-bg:      #FFFDF2;
+  --axq-color-status-warning-text:    #B86E00;
+  --axq-color-status-warning-subtle:  rgba(255, 170, 0, 0.12);
+
+  --axq-color-status-error:           var(--axq-p-red-500);     /* #FF3D71 */
+  --axq-color-status-error-bg:        #FFF2F2;
+  --axq-color-status-error-text:      #B81D5B;
+  --axq-color-status-error-subtle:    rgba(255, 61, 113, 0.12);
+
+  /* ── Radius / Semantic ─────────────────────────────────────── */
+  --axq-radius-button: var(--axq-p-radius-2xl);    /* 24px — pill */
+  --axq-radius-input:  var(--axq-p-radius-lg);     /* 12px */
+  --axq-radius-card:   var(--axq-p-radius-xl);     /* 16px */
+  --axq-radius-modal:  var(--axq-p-radius-2xl);    /* 24px */
+  --axq-radius-chip:   var(--axq-p-radius-full);   /* 9999px */
+  --axq-radius-avatar: var(--axq-p-radius-full);   /* 9999px */
+  --axq-radius-badge:  var(--axq-p-radius-sm);     /* 4px */
+  --axq-radius-tooltip:var(--axq-p-radius-md);     /* 8px */
+
+  /* ── Spacing / Semantic ────────────────────────────────────── */
+  --axq-inset-xs:  var(--axq-p-space-4);    /*  4px */
+  --axq-inset-sm:  var(--axq-p-space-8);    /*  8px */
+  --axq-inset-md:  var(--axq-p-space-16);   /* 16px */
+  --axq-inset-lg:  var(--axq-p-space-24);   /* 24px */
+  --axq-inset-xl:  var(--axq-p-space-32);   /* 32px */
+  --axq-inset-2xl: var(--axq-p-space-48);   /* 48px */
+
+  --axq-gap-xs:  var(--axq-p-space-4);     /*  4px */
+  --axq-gap-sm:  var(--axq-p-space-8);     /*  8px */
+  --axq-gap-md:  var(--axq-p-space-12);    /* 12px */
+  --axq-gap-lg:  var(--axq-p-space-16);    /* 16px */
+  --axq-gap-xl:  var(--axq-p-space-24);    /* 24px */
+
+  /* ── Typography / Semantic ─────────────────────────────────── */
+  --axq-font-family: var(--axq-p-font-family-base);
+  --axq-font-family-numeric: var(--axq-p-font-family-numeric);
+
+  --axq-font-weight-regular:  var(--axq-p-weight-regular);
+  --axq-font-weight-medium:   var(--axq-p-weight-medium);
+  --axq-font-weight-semibold: var(--axq-p-weight-semibold);
+
+  /* type scale — maps to primitive font sizes */
+  --axq-type-h1:      var(--axq-p-size-96);   /* 96px */
+  --axq-type-h2:      var(--axq-p-size-60);   /* 60px */
+  --axq-type-h3:      var(--axq-p-size-48);   /* 48px */
+  --axq-type-h4:      var(--axq-p-size-34);   /* 34px */
+  --axq-type-h5:      var(--axq-p-size-24);   /* 24px */
+  --axq-type-h6:      var(--axq-p-size-20);   /* 20px */
+  --axq-type-s1:      var(--axq-p-size-16);   /* 16px — Subtitle S1 */
+  --axq-type-s2:      var(--axq-p-size-14);   /* 14px — Subtitle S2 */
+  --axq-type-body:    var(--axq-p-size-16);   /* 16px — Body B1 */
+  --axq-type-body-sm: var(--axq-p-size-14);   /* 14px — Body B2 */
+  --axq-type-caption: var(--axq-p-size-12);   /* 12px */
+  --axq-type-overline:var(--axq-p-size-10);   /* 10px + uppercase */
+
+  /* button text sizes */
+  --axq-type-btn-giant:  var(--axq-p-size-20);  /* 20px */
+  --axq-type-btn-large:  var(--axq-p-size-16);  /* 16px */
+  --axq-type-btn-medium: var(--axq-p-size-14);  /* 14px */
+  --axq-type-btn-small:  var(--axq-p-size-12);  /* 12px */
+
+  /* ── Gradient ──────────────────────────────────────────────── */
+  --axq-gradient-crypto-card:  linear-gradient(135deg, #1E2A59 0%, #0D1117 100%);
+  --axq-gradient-brand-accent: linear-gradient(90deg, var(--axq-p-brand-purple) 0%, var(--axq-p-brand-teal) 100%);
+
+  /* ── TLP (Traffic Light Protocol) — Layer 2 Semantic ──────── */
+  /* Maps each security level to a Status primitive.             */
+  /* LEGAL NOTE: These tokens are compliance-class signals.      */
+  /* Do NOT remap them to purely aesthetic purposes.             */
+
+  /* SAFE — confirmed Axioledger-native namespace (.axq, .vrq)   */
+  --axq-tlp-safe:          var(--axq-color-status-success);        /* #00D68F */
+  --axq-tlp-safe-bg:       var(--axq-color-status-success-bg);     /* #F0FFF5 */
+  --axq-tlp-safe-text:     var(--axq-color-status-success-text);   /* #00997A */
+  --axq-tlp-safe-border:   var(--axq-color-status-success);
+  --axq-tlp-safe-subtle:   var(--axq-color-status-success-subtle); /* rgba(0,214,143,0.12) */
+
+  /* CAUTION — DeFi protocol namespace (.kpx); risk disclosure required */
+  --axq-tlp-caution:        var(--axq-color-status-warning);        /* #FFAA00 */
+  --axq-tlp-caution-bg:     var(--axq-color-status-warning-bg);     /* #FFFDF2 */
+  --axq-tlp-caution-text:   var(--axq-color-status-warning-text);   /* #B86E00 */
+  --axq-tlp-caution-border: var(--axq-color-status-warning);
+  --axq-tlp-caution-subtle: var(--axq-color-status-warning-subtle);
+
+  /* BLOCKED — unregistered TLD or raw 0x address; Sign button MUST be disabled */
+  --axq-tlp-blocked:        var(--axq-color-status-error);          /* #FF3D71 */
+  --axq-tlp-blocked-bg:     var(--axq-color-status-error-bg);       /* #FFF2F2 */
+  --axq-tlp-blocked-text:   var(--axq-color-status-error-text);     /* #B81D5B */
+  --axq-tlp-blocked-border: var(--axq-color-status-error);
+  --axq-tlp-blocked-subtle: var(--axq-color-status-error-subtle);
+  --axq-tlp-blocked-overlay:rgba(255, 61, 113, 0.08);
+
+  /* SYSTEM — infrastructure namespace (.sqx, .vpx); hidden from end-user UI */
+  --axq-tlp-system:         var(--axq-p-grey-400);                  /* #2E3A59 */
+  --axq-tlp-system-bg:      var(--axq-p-grey-50);                   /* #EDF1F7 */
+  --axq-tlp-system-text:    var(--axq-p-grey-300);                  /* #8F9BB3 */
+  --axq-tlp-system-border:  var(--axq-p-grey-200);
+  --axq-tlp-system-subtle:  rgba(87, 96, 106, 0.10);
+
+  /* ── Elevation / Shadow (Layer 1 extension) ────────────────── */
+  /* Referenced by Toast, Drawer, Modal for z-axis depth.        */
+  --axq-shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.10);
+  --axq-shadow-md:  0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --axq-shadow-lg:  0 10px 15px rgba(0, 0, 0, 0.10), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --axq-shadow-xl:  0 20px 25px rgba(0, 0, 0, 0.10), 0 10px 10px rgba(0, 0, 0, 0.04);
+  --axq-shadow-toast: var(--axq-shadow-lg);
+}
+
+/* ── Dark Mode ─────────────────────────────────────────────── */
+/* Skeleton: override semantic color tokens only.              */
+/* Primitive tokens STAY the same — only semantics flip.       */
+[data-theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Text */
+    --axq-color-text-primary:   var(--axq-p-dark-text-1);   /* #E6EDF3 */
+    --axq-color-text-secondary: var(--axq-p-dark-text-2);   /* #8B949E */
+    --axq-color-text-disabled:  var(--axq-p-dark-muted);    /* #484F58 */
+    --axq-color-text-link:      var(--axq-p-dark-blue);     /* #58A6FF */
+
+    /* Background */
+    --axq-color-bg-surface:     var(--axq-p-dark-bg-2);     /* #1C2128 */
+    --axq-color-bg-primary:     var(--axq-p-dark-bg-0);     /* #0D1117 */
+    --axq-color-bg-secondary:   var(--axq-p-dark-bg-1);     /* #161B22 */
+    --axq-color-bg-disabled:    var(--axq-p-dark-muted);
+
+    /* Surface */
+    --axq-color-surface-default: var(--axq-p-dark-bg-2);    /* #1C2128 */
+    --axq-color-surface-raised:  var(--axq-p-dark-bg-3);    /* #22272E */
+    --axq-color-surface-overlay: var(--axq-p-dark-bg-4);    /* #2D333B */
+    --axq-color-surface-sunken:  var(--axq-p-dark-bg-1);
+
+    /* Border */
+    --axq-color-border-default:  var(--axq-p-dark-border);  /* #30363D */
+    --axq-color-border-strong:   var(--axq-p-dark-muted);   /* #484F58 */
+    --axq-color-border-subtle:   var(--axq-p-dark-border);
+    --axq-color-border-focus:    var(--axq-p-dark-blue);    /* #58A6FF */
+
+    /* Icon */
+    --axq-color-icon-primary:    var(--axq-p-dark-text-1);
+    --axq-color-icon-secondary:  var(--axq-p-dark-text-2);
+    --axq-color-icon-disabled:   var(--axq-p-dark-muted);
+    --axq-color-icon-brand:      var(--axq-p-dark-blue);
+
+    /* Status — info adjusts for dark; success/warning/error keep same */
+    --axq-color-status-info:           var(--axq-p-dark-blue);
+    --axq-color-status-info-bg:        rgba(88, 166, 255, 0.10);
+    --axq-color-status-info-text:      var(--axq-p-dark-blue);
+    --axq-color-status-info-subtle:    rgba(88, 166, 255, 0.15);
+
+    --axq-color-status-success-subtle: rgba(0, 214, 143, 0.15);
+    --axq-color-status-warning-subtle: rgba(255, 170, 0, 0.15);
+    --axq-color-status-error-subtle:   rgba(255, 61, 113, 0.15);
+
+    /* TLP dark-mode overrides — subtle bg adjustments for contrast */
+    --axq-tlp-safe-bg:        rgba(0, 214, 143, 0.10);
+    --axq-tlp-caution-bg:     rgba(255, 170, 0, 0.10);
+    --axq-tlp-blocked-bg:     rgba(255, 61, 113, 0.10);
+    --axq-tlp-system-bg:      var(--axq-p-dark-bg-3);
+    --axq-tlp-system-text:    var(--axq-p-dark-muted);
+
+    /* Shadow — lighter on dark backgrounds */
+    --axq-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.30);
+    --axq-shadow-md:  0 4px 8px rgba(0, 0, 0, 0.35);
+    --axq-shadow-lg:  0 10px 20px rgba(0, 0, 0, 0.40);
+    --axq-shadow-xl:  0 20px 30px rgba(0, 0, 0, 0.45);
+  }
+}

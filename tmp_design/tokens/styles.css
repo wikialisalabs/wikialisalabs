@@ -1,0 +1,20 @@
+/* =============================================================
+   @axioledger/axio-design-system v6.0.0 — Token CSS Barrel
+   Loads all three token layers in dependency order.
+
+   Import order matters:
+     1. primitive.css  — raw values (must load first)
+     2. semantic.css   — aliases primitives (depends on layer 1)
+     3. component.css  — aliases semantics (depends on layers 1+2)
+
+   Usage (consuming app):
+     import '@axioledger/axio-design-system/tokens';
+     OR granular:
+     import '@axioledger/axio-design-system/tokens/primitive';
+     import '@axioledger/axio-design-system/tokens/semantic';
+     import '@axioledger/axio-design-system/tokens/component';
+   ============================================================= */
+
+@import './primitive.css';
+@import './semantic.css';
+@import './component.css';

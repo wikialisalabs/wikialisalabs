@@ -1,0 +1,46 @@
+/* ── EmptyState ──────────────────────────────────────────────── */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 12px;
+}
+
+.illustration { margin-bottom: 4px; line-height: 0; }
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-h6, 20px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-b2, 14px);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 280px;
+}
+
+.actionBtn {
+  margin-top: 8px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-md, 10px);
+  border: 1.5px solid var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-btn-medium, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.actionBtn:hover { background: var(--color-surface-raised); }
+.actionBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

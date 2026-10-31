@@ -1,0 +1,159 @@
+/* =============================================================
+   Badge + Chip — CSS Module
+   Spec: Layer 3 component tokens — badge/*, chip/*
+   ============================================================= */
+
+/* ══════════════════════════════════════════════════════════════
+   BADGE
+   ══════════════════════════════════════════════════════════════ */
+
+.badge {
+  display:        inline-flex;
+  align-items:    center;
+  padding:        2px 8px;
+  border-radius:  4px;                          /* radius/badge */
+  border:         1px solid transparent;
+  font-family:    var(--font-family-base);
+  font-size:      var(--font-size-caption);     /* 12px */
+  line-height:    var(--line-height-caption);
+  font-weight:    var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caption);
+  white-space:    nowrap;
+}
+
+/* ── Badge variants ──────────────────────────────────────────── */
+
+.badge-info {
+  background:   rgba(0, 149, 255, 0.10);
+  color:        var(--color-status-info-default);
+  border-color: rgba(0, 149, 255, 0.20);
+}
+
+.badge-success {
+  background:   rgba(0, 214, 143, 0.10);
+  color:        #00997A;                        /* success/700 — accessible on white bg */
+  border-color: rgba(0, 214, 143, 0.20);
+}
+
+.badge-warning {
+  background:   rgba(255, 170, 0, 0.10);
+  color:        #B86E00;                        /* warning/700 — accessible on white bg */
+  border-color: rgba(255, 170, 0, 0.20);
+}
+
+.badge-error {
+  background:   rgba(255, 61, 113, 0.10);
+  color:        var(--color-status-error-default);
+  border-color: rgba(255, 61, 113, 0.20);
+}
+
+.badge-default {
+  background:   var(--color-surface-raised);
+  color:        var(--color-text-secondary);
+  border-color: var(--color-border-default);
+}
+
+/* ── Dot indicator ───────────────────────────────────────────── */
+
+.dot {
+  display:       inline-block;
+  width:         8px;
+  height:        8px;
+  border-radius: 9999px;
+  flex-shrink:   0;
+}
+
+.dot-info    { background: var(--color-status-info-default);    }
+.dot-success { background: var(--color-status-success-default); }
+.dot-warning { background: var(--color-status-warning-default); }
+.dot-error   { background: var(--color-status-error-default);   }
+.dot-default { background: var(--color-text-secondary);         }
+
+/* ══════════════════════════════════════════════════════════════
+   CHIP
+   ══════════════════════════════════════════════════════════════ */
+
+.chip {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             6px;
+  padding:         6px 12px;
+  border-radius:   9999px;                      /* radius/full — pill */
+  border:          1.5px solid var(--color-border-default);
+  background:      var(--color-surface-raised);
+  color:           var(--color-text-primary);
+  font-family:     var(--font-family-base);
+  font-size:       var(--font-size-b2);         /* 14px — body-sm */
+  font-weight:     var(--font-weight-medium);
+  cursor:          pointer;
+  user-select:     none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background  120ms ease,
+    border-color 120ms ease,
+    color        120ms ease;
+  outline: none;
+}
+
+.chip:hover:not(.chipDisabled) {
+  background:   var(--color-surface-default);
+  border-color: var(--color-border-strong);
+}
+
+.chip:focus-visible {
+  outline:        2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Active state ────────────────────────────────────────────── */
+.chipActive {
+  background:   #000000;
+  color:        #FFFFFF;
+  border-color: #000000;
+}
+
+.chipActive:hover:not(.chipDisabled) {
+  background:   #1A1A1A;
+  border-color: #1A1A1A;
+}
+
+/* ── Disabled ────────────────────────────────────────────────── */
+.chipDisabled {
+  opacity:        0.45;
+  cursor:         not-allowed;
+  pointer-events: none;
+}
+
+/* ── Label + Remove button ───────────────────────────────────── */
+.chipLabel {
+  line-height: 1;
+}
+
+.chipRemove {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           16px;
+  height:          16px;
+  border-radius:   9999px;
+  font-size:       14px;
+  line-height:     1;
+  cursor:          pointer;
+  opacity:         0.6;
+  transition:      opacity 100ms ease, background 100ms ease;
+  margin-left:     2px;
+}
+
+.chipRemove:hover  { opacity: 1; background: rgba(0,0,0,0.12); }
+.chipActive .chipRemove:hover { background: rgba(255,255,255,0.20); }
+
+/* ── Dark mode ───────────────────────────────────────────────── */
+[data-theme="dark"] .chipActive {
+  background:   #FFFFFF;
+  color:        #000000;
+  border-color: #FFFFFF;
+}
+[data-theme="dark"] .chipActive:hover:not(.chipDisabled) {
+  background:   #E0E0E0;
+  border-color: #E0E0E0;
+}

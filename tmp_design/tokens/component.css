@@ -1,0 +1,282 @@
+/* =============================================================
+   AXQ Design System — Layer 3: Component Tokens
+   All values alias to Semantic (preferred) or Primitive layer.
+   Never hardcode raw values here.
+
+   Naming: --axq-c-<component>-<role>[-<variant>]
+   Depends on: tokens/primitive.css, tokens/semantic.css
+   ============================================================= */
+
+:root {
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  BUTTON                                                  ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  /* Layout & Structure */
+  --axq-c-btn-radius:        var(--axq-radius-button);         /* 24px — pill */
+  --axq-c-btn-padding-y:     var(--axq-p-space-14);            /* 14px */
+  --axq-c-btn-padding-x:     var(--axq-p-space-77);            /* 77px */
+  --axq-c-btn-icon-size:     var(--axq-p-icon-standard);       /* 20px */
+  --axq-c-btn-gap:           var(--axq-gap-sm);                /*  8px */
+  --axq-c-btn-border-width:  1.5px;
+
+  /* Height scale */
+  --axq-c-btn-height-giant:  56px;
+  --axq-c-btn-height-large:  48px;
+  --axq-c-btn-height-medium: 40px;
+  --axq-c-btn-height-small:  32px;
+
+  /* Typography */
+  --axq-c-btn-font-family:   var(--axq-font-family);
+  --axq-c-btn-font-weight:   var(--axq-font-weight-medium);
+  --axq-c-btn-text-transform: uppercase;
+  --axq-c-btn-font-size-giant:  var(--axq-type-btn-giant);   /* 20px */
+  --axq-c-btn-font-size-large:  var(--axq-type-btn-large);   /* 16px */
+  --axq-c-btn-font-size-medium: var(--axq-type-btn-medium);  /* 14px */
+  --axq-c-btn-font-size-small:  var(--axq-type-btn-small);   /* 12px */
+
+  /* Filled — background fills */
+  --axq-c-btn-filled-bg-brand:    var(--axq-p-grey-900);          /* #000000 */
+  --axq-c-btn-filled-bg-dark:     var(--axq-p-grey-500);          /* #222B45 */
+  --axq-c-btn-filled-bg-white:    var(--axq-p-white);             /* #FFFFFF */
+  --axq-c-btn-filled-bg-disabled: var(--axq-p-grey-300);          /* #8F9BB3 */
+  --axq-c-btn-filled-bg-info:     var(--axq-color-status-info);   /* #0095FF */
+  --axq-c-btn-filled-bg-success:  var(--axq-color-status-success);/* #00D68F */
+  --axq-c-btn-filled-bg-warning:  var(--axq-color-status-warning);/* #FFAA00 */
+  --axq-c-btn-filled-bg-error:    var(--axq-color-status-error);  /* #FF3D71 */
+
+  /* Filled — text colors */
+  --axq-c-btn-filled-text-default:     var(--axq-color-text-inverse);  /* #FFFFFF — on dark fills */
+  --axq-c-btn-filled-text-white-state: var(--axq-color-text-primary);  /* #222B45 — on white fill */
+  --axq-c-btn-filled-text-disabled:    var(--axq-color-text-disabled); /* #8F9BB3 */
+
+  /* Outlined — structure */
+  --axq-c-btn-outlined-bg:            var(--axq-p-white);
+  --axq-c-btn-outlined-border-brand:  var(--axq-p-grey-900);
+  --axq-c-btn-outlined-border-info:   var(--axq-color-status-info);
+  --axq-c-btn-outlined-border-success:var(--axq-color-status-success);
+  --axq-c-btn-outlined-border-warning:var(--axq-color-status-warning);
+  --axq-c-btn-outlined-border-error:  var(--axq-color-status-error);
+  --axq-c-btn-outlined-border-disabled: var(--axq-color-border-disabled);
+
+  /* Ghost */
+  --axq-c-btn-ghost-bg:     var(--axq-color-bg-primary);
+  --axq-c-btn-ghost-text:   var(--axq-color-text-primary);
+  --axq-c-btn-ghost-border: var(--axq-color-border-default);
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  INPUT                                                   ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-input-bg:              var(--axq-color-surface-default);
+  --axq-c-input-text:            var(--axq-color-text-primary);
+  --axq-c-input-placeholder:     var(--axq-color-text-disabled);
+  --axq-c-input-label:           var(--axq-color-text-secondary);
+  --axq-c-input-hint:            var(--axq-color-text-disabled);
+  --axq-c-input-border:          var(--axq-color-border-default);
+  --axq-c-input-border-focus:    var(--axq-color-border-focus);
+  --axq-c-input-border-error:    var(--axq-color-border-error);
+  --axq-c-input-border-disabled: var(--axq-color-border-disabled);
+  --axq-c-input-bg-disabled:     var(--axq-color-bg-disabled);
+  --axq-c-input-error-text:      var(--axq-color-status-error-text);
+
+  --axq-c-input-radius:          var(--axq-radius-input);    /* 12px */
+  --axq-c-input-padding-x:       var(--axq-inset-md);        /* 16px */
+  --axq-c-input-padding-y:       var(--axq-inset-sm);        /*  8px */
+  --axq-c-input-border-width:    1.5px;
+  --axq-c-input-font-size:       var(--axq-type-body);       /* 16px */
+  --axq-c-input-label-font-size: var(--axq-type-caption);    /* 12px */
+  --axq-c-input-height-lg:       52px;
+  --axq-c-input-height-md:       44px;
+  --axq-c-input-height-sm:       36px;
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  BADGE & CHIP                                            ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-badge-radius:     var(--axq-radius-badge);       /* 4px */
+  --axq-c-badge-font-size:  var(--axq-type-caption);       /* 12px */
+  --axq-c-badge-font-weight:var(--axq-font-weight-medium);
+  --axq-c-badge-padding-x:  var(--axq-p-space-6);
+  --axq-c-badge-padding-y:  var(--axq-p-space-2);
+
+  --axq-c-badge-info-bg:    var(--axq-color-status-info-bg);    /* #F2F8FF */
+  --axq-c-badge-info-text:  var(--axq-color-status-info-text);  /* #0057C2 */
+  --axq-c-badge-info-border:var(--axq-color-status-info);
+
+  --axq-c-badge-success-bg:    var(--axq-color-status-success-bg);
+  --axq-c-badge-success-text:  var(--axq-color-status-success-text);
+  --axq-c-badge-success-border:var(--axq-color-status-success);
+
+  --axq-c-badge-warning-bg:    var(--axq-color-status-warning-bg);
+  --axq-c-badge-warning-text:  var(--axq-color-status-warning-text);
+  --axq-c-badge-warning-border:var(--axq-color-status-warning);
+
+  --axq-c-badge-error-bg:    var(--axq-color-status-error-bg);
+  --axq-c-badge-error-text:  var(--axq-color-status-error-text);
+  --axq-c-badge-error-border:var(--axq-color-status-error);
+
+  /* Chip */
+  --axq-c-chip-radius:      var(--axq-radius-chip);        /* 9999px */
+  --axq-c-chip-font-size:   var(--axq-type-body-sm);       /* 14px */
+  --axq-c-chip-bg:          var(--axq-color-bg-secondary);
+  --axq-c-chip-text:        var(--axq-color-text-primary);
+  --axq-c-chip-border:      var(--axq-color-border-default);
+  --axq-c-chip-padding-x:   var(--axq-inset-sm);
+  --axq-c-chip-padding-y:   var(--axq-p-space-4);
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  CARD                                                    ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-card-bg:          var(--axq-color-surface-default);
+  --axq-c-card-border:      var(--axq-color-border-subtle);
+  --axq-c-card-border-width:1px;
+  --axq-c-card-radius:      var(--axq-radius-card);        /* 16px */
+  --axq-c-card-padding:     var(--axq-inset-lg);           /* 24px */
+  --axq-c-card-gap:         var(--axq-gap-md);             /* 12px */
+  --axq-c-card-title-color: var(--axq-color-text-primary);
+  --axq-c-card-desc-color:  var(--axq-color-text-secondary);
+  --axq-c-card-title-size:  var(--axq-type-h6);            /* 20px */
+  --axq-c-card-desc-size:   var(--axq-type-body-sm);       /* 14px */
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  TOGGLE                                                  ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-toggle-active-bg:   var(--axq-color-status-success); /* #00D68F */
+  --axq-c-toggle-inactive-bg: var(--axq-color-bg-tertiary);    /* #E4E9F2 */
+  --axq-c-toggle-disabled-bg: var(--axq-color-bg-disabled);
+  --axq-c-toggle-thumb:       var(--axq-color-bg-primary);     /* #FFFFFF */
+  --axq-c-toggle-width:       48px;
+  --axq-c-toggle-height:      28px;
+  --axq-c-toggle-thumb-size:  22px;
+  --axq-c-toggle-radius:      var(--axq-radius-full);
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  NAVBAR                                                  ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-navbar-bg:             var(--axq-color-surface-default);
+  --axq-c-navbar-border:         var(--axq-color-border-subtle);
+  --axq-c-navbar-border-width:   1px;
+  --axq-c-navbar-icon-active:    var(--axq-color-icon-brand);    /* #000000 */
+  --axq-c-navbar-icon-inactive:  var(--axq-color-icon-secondary);/* #2E3A59 */
+  --axq-c-navbar-label-active:   var(--axq-color-text-brand);    /* #000000 */
+  --axq-c-navbar-label-inactive: var(--axq-color-text-secondary);/* #2E3A59 */
+  --axq-c-navbar-icon-size:      var(--axq-p-icon-lg);           /* 24px */
+  --axq-c-navbar-label-size:     var(--axq-type-caption);        /* 12px */
+  --axq-c-navbar-height:         64px;
+  --axq-c-navbar-padding-x:      var(--axq-inset-md);
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  TLP — NAMESPACE BADGE (Layer 3 Component Tokens)        ║
+     ║  Compliance-class tokens. Alias ONLY to TLP semantic.    ║
+     ║  Never alias directly to primitives.                     ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  /* SAFE (.axq, .vrq) */
+  --axq-c-tlp-safe-bg:          var(--axq-tlp-safe-bg);          /* #F0FFF5 */
+  --axq-c-tlp-safe-text:        var(--axq-tlp-safe-text);        /* #00997A */
+  --axq-c-tlp-safe-border:      var(--axq-tlp-safe-border);      /* #00D68F */
+  --axq-c-tlp-safe-subtle:      var(--axq-tlp-safe-subtle);
+
+  /* CAUTION (.kpx) */
+  --axq-c-tlp-caution-bg:       var(--axq-tlp-caution-bg);       /* #FFFDF2 */
+  --axq-c-tlp-caution-text:     var(--axq-tlp-caution-text);     /* #B86E00 */
+  --axq-c-tlp-caution-border:   var(--axq-tlp-caution-border);   /* #FFAA00 */
+  --axq-c-tlp-caution-subtle:   var(--axq-tlp-caution-subtle);
+
+  /* BLOCKED (0x…, unknown TLD) */
+  --axq-c-tlp-blocked-bg:       var(--axq-tlp-blocked-bg);       /* #FFF2F2 */
+  --axq-c-tlp-blocked-text:     var(--axq-tlp-blocked-text);     /* #B81D5B */
+  --axq-c-tlp-blocked-border:   var(--axq-tlp-blocked-border);   /* #FF3D71 */
+  --axq-c-tlp-blocked-subtle:   var(--axq-tlp-blocked-subtle);
+  --axq-c-tlp-blocked-overlay:  var(--axq-tlp-blocked-overlay);
+
+  /* SYSTEM (.sqx, .vpx) */
+  --axq-c-tlp-system-bg:        var(--axq-tlp-system-bg);
+  --axq-c-tlp-system-text:      var(--axq-tlp-system-text);
+  --axq-c-tlp-system-border:    var(--axq-tlp-system-border);
+
+  /* Shared badge structure */
+  --axq-c-tlp-badge-radius:     var(--axq-radius-badge);         /* 4px */
+  --axq-c-tlp-badge-font-size:  var(--axq-type-caption);         /* 12px */
+  --axq-c-tlp-badge-font-weight:var(--axq-font-weight-medium);
+  --axq-c-tlp-badge-padding-x:  var(--axq-p-space-6);            /* 6px */
+  --axq-c-tlp-badge-padding-y:  var(--axq-p-space-2);            /* 2px */
+
+  /* Input border — BLOCKED state (anti-phishing guard on address inputs) */
+  --axq-c-input-border-blocked: var(--axq-tlp-blocked-border);   /* #FF3D71 */
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  TABLE                                                   ║
+     ║  For governance dashboards & DEX trade history.          ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-table-bg:              var(--axq-color-surface-default);
+  --axq-c-table-header-bg:       var(--axq-color-surface-sunken); /* Creates depth */
+  --axq-c-table-border:          var(--axq-color-border-subtle);
+  --axq-c-table-border-width:    1px;
+  --axq-c-table-row-hover:       var(--axq-color-bg-secondary);
+  --axq-c-table-row-selected:    var(--axq-color-status-info-subtle);
+  --axq-c-table-header-text:     var(--axq-color-text-secondary);
+  --axq-c-table-header-font-size:var(--axq-type-caption);         /* 12px */
+  --axq-c-table-header-font-weight:var(--axq-font-weight-medium);
+  --axq-c-table-cell-font-size:  var(--axq-type-body-sm);         /* 14px */
+  --axq-c-table-cell-padding-x:  var(--axq-inset-md);             /* 16px */
+  --axq-c-table-cell-padding-y:  var(--axq-inset-sm);             /*  8px */
+  --axq-c-table-radius:          var(--axq-radius-card);          /* 16px */
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  TOAST / NOTIFICATION                                    ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-toast-bg:          var(--axq-color-surface-raised);     /* floats above content */
+  --axq-c-toast-radius:      var(--axq-p-radius-md);              /* 8px */
+  --axq-c-toast-shadow:      var(--axq-shadow-toast);
+  --axq-c-toast-padding-x:   var(--axq-inset-md);                 /* 16px */
+  --axq-c-toast-padding-y:   var(--axq-inset-sm);                 /*  8px */
+  --axq-c-toast-gap:         var(--axq-gap-sm);                   /*  8px */
+  --axq-c-toast-font-size:   var(--axq-type-body-sm);             /* 14px */
+  --axq-c-toast-font-weight: var(--axq-font-weight-medium);
+  --axq-c-toast-border-width:1px;
+  --axq-c-toast-border:      var(--axq-color-border-subtle);
+  --axq-c-toast-max-width:   400px;
+  --axq-c-toast-z-index:     9000;
+
+  /* Toast semantic variants (inherit from status tokens) */
+  --axq-c-toast-success-border: var(--axq-color-status-success);
+  --axq-c-toast-error-border:   var(--axq-color-status-error);
+  --axq-c-toast-warning-border: var(--axq-color-status-warning);
+  --axq-c-toast-info-border:    var(--axq-color-status-info);
+
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  DRAWER / BOTTOM SHEET (Mobile Wallet)                   ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  --axq-c-drawer-bg:           var(--axq-color-surface-default);
+  --axq-c-drawer-overlay:      rgba(0, 0, 0, 0.50);               /* scrim */
+  --axq-c-drawer-shadow:       var(--axq-shadow-xl);
+  --axq-c-drawer-radius-top:   var(--axq-p-radius-3xl);           /* 32px — top corners only */
+  --axq-c-drawer-border-top:   var(--axq-color-border-subtle);
+  --axq-c-drawer-border-width: 1px;
+  --axq-c-drawer-handle-color: var(--axq-color-border-strong);
+  --axq-c-drawer-handle-width: 40px;
+  --axq-c-drawer-handle-height:4px;
+  --axq-c-drawer-handle-radius:var(--axq-p-radius-full);
+  --axq-c-drawer-padding-x:    var(--axq-inset-md);               /* 16px */
+  --axq-c-drawer-padding-top:  var(--axq-inset-sm);               /*  8px */
+  --axq-c-drawer-padding-bottom:var(--axq-p-space-40);            /* 40px (safe-area) */
+  --axq-c-drawer-z-index:      8000;
+}

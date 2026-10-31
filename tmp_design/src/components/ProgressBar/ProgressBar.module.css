@@ -1,0 +1,111 @@
+/* ── ProgressBar ─────────────────────────────────────────────── */
+.wrapper { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.labelText {
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-text-secondary);
+}
+.percentText {
+  font-size: var(--font-size-caption, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary);
+}
+
+.track {
+  width: 100%;
+  background: var(--color-border-default);
+  border-radius: var(--radius-pill, 999px);
+  overflow: hidden;
+}
+.track[data-size="thin"]    { height: 4px; }
+.track[data-size="default"] { height: 8px; }
+
+.fill {
+  height: 100%;
+  background: var(--color-status-info-default, #0095FF);
+  border-radius: var(--radius-pill, 999px);
+  transition: width 400ms ease;
+}
+
+/* ── StepIndicator ───────────────────────────────────────────── */
+.steps {
+  display: flex;
+  align-items: flex-start;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  gap: 6px;
+}
+
+/* Connector line between circles */
+.connector {
+  position: absolute;
+  top: 14px;    /* vertically centre with the circle (28px / 2 = 14) */
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: var(--color-border-default);
+}
+.step[data-state="done"] + .step .connector,
+.step[data-state="active"] + .step .connector {
+  background: var(--color-status-success-default, #00D68F);
+}
+
+/* Circle */
+.circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold, 600);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: background 200ms, border-color 200ms;
+}
+
+.step[data-state="done"] .circle {
+  background: var(--color-status-success-default, #00D68F);
+  color: #FFFFFF;
+  border: none;
+}
+.step[data-state="active"] .circle {
+  background: var(--color-status-info-default, #0095FF);
+  color: #FFFFFF;
+  border: none;
+}
+.step[data-state="pending"] .circle {
+  background: var(--color-surface-default);
+  color: var(--color-text-disabled);
+  border: 2px solid var(--color-border-default);
+}
+
+/* Step label */
+.stepLabel {
+  font-size: var(--font-size-caption, 12px);
+  text-align: center;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.step[data-state="done"]    .stepLabel { color: var(--color-text-secondary); }
+.step[data-state="active"]  .stepLabel { color: var(--color-text-primary); font-weight: var(--font-weight-semibold, 600); }
+.step[data-state="pending"] .stepLabel { color: var(--color-text-disabled); }

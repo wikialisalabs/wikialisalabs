@@ -1,0 +1,317 @@
+/* =============================================================
+   Axioledger Design System — CSS Custom Properties
+   Generated from: design-system/tokens/color-tokens.json
+                   design-system/tokens/typography-tokens.json
+                   design-system/tokens/icon-tokens.css
+   Icon System:    asset/icon/linear/ (919 SVG)
+                   asset/icon/bold/   (979 SVG)
+   ============================================================= */
+
+/* @import "icon-tokens.css"; */
+/* Hoặc link riêng: <link rel="stylesheet" href="icon-tokens.css"> */
+
+/* ── Light Mode (default) ──────────────────────────────────── */
+:root {
+
+  /* Background */
+  --color-background-primary:   #FFFFFF;
+  --color-background-secondary: #F5F6FA;
+  --color-background-overlay:   rgba(0, 0, 0, 0.40);
+
+  /* Surface */
+  --color-surface-default:  #FFFFFF;
+  --color-surface-raised:   #F5F6FA;
+  --color-surface-overlay:  #FFFFFF;
+
+  /* Text */
+  --color-text-primary:     #1E2A59;
+  --color-text-secondary:   #57606A;
+  --color-text-disabled:    #B0BAC9;
+  --color-text-on-accent:   #FFFFFF;
+  --color-text-link:        #0095FF;
+  --color-text-link-visited:#AF96FB;
+
+  /* Border */
+  --color-border-default:   #E5E7EB;
+  --color-border-strong:    #B0BAC9;
+  --color-border-focus:     #0095FF;
+  --color-border-error:     #FF3D71;
+
+  /* Icon */
+  --color-icon-primary:     #1E2A59;
+  --color-icon-secondary:   #57606A;
+  --color-icon-disabled:    #B0BAC9;
+  --color-icon-brand:       #0095FF;
+  --color-icon-on-accent:   #FFFFFF;
+
+  /* Status — Success */
+  --color-status-success-default: #00D68F;
+  --color-status-success-subtle:  rgba(0, 214, 143, 0.10);
+
+  /* Status — Warning */
+  --color-status-warning-default: #FFAA00;
+  --color-status-warning-subtle:  rgba(255, 170, 0, 0.10);
+
+  /* Status — Error */
+  --color-status-error-default:   #FF3D71;
+  --color-status-error-subtle:    rgba(255, 61, 113, 0.10);
+
+  /* Status — Info */
+  --color-status-info-default:    #0095FF;
+  --color-status-info-subtle:     rgba(0, 149, 255, 0.10);
+
+  /* Brand */
+  --color-brand-magenta: #FD9FDD;
+  --color-brand-orange:  #FC7339;
+  --color-brand-greeny:  #BEFF6C;
+  --color-brand-violet:  #AF96FB;
+  --color-brand-blue:    #49DBC8;
+  --color-brand-yellow:  #FFF172;
+
+  /* Gradient */
+  --gradient-crypto-card:  linear-gradient(135deg, #1E2A59 0%, #0D1117 100%);
+  --gradient-brand-accent: linear-gradient(90deg, #AF96FB 0%, #49DBC8 100%);
+
+  /* ── Typography ─────────────────────────────────────────── */
+
+  --font-family-base:    'Work Sans', sans-serif;
+  --font-family-numeric: 'Work Sans', monospace;
+
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+
+  /* Headlines */
+  --font-size-h1: 96px; --line-height-h1: 112px; --letter-spacing-h1: -1.5px;
+  --font-size-h2: 60px; --line-height-h2: 72px;  --letter-spacing-h2: -0.5px;
+  --font-size-h3: 48px; --line-height-h3: 60px;  --letter-spacing-h3: 0px;
+  --font-size-h4: 34px; --line-height-h4: 44px;  --letter-spacing-h4: 0.25px;
+  --font-size-h5: 24px; --line-height-h5: 32px;  --letter-spacing-h5: 0px;
+  --font-size-h6: 20px; --line-height-h6: 28px;  --letter-spacing-h6: 0.15px;
+
+  /* Subtitle */
+  --font-size-s1: 16px; --line-height-s1: 24px; --letter-spacing-s1: 0.15px;
+  --font-size-s2: 14px; --line-height-s2: 20px; --letter-spacing-s2: 0.1px;
+
+  /* Body */
+  --font-size-b1:       16px; --line-height-b1:       24px; --letter-spacing-b1:       0.5px;
+  --font-size-b2:       14px; --line-height-b2:       20px; --letter-spacing-b2:       0.25px;
+  --font-size-caption:  12px; --line-height-caption:  16px; --letter-spacing-caption:  0.4px;
+  --font-size-overline: 10px; --line-height-overline: 16px; --letter-spacing-overline: 1.5px;
+
+  /* Button */
+  --font-size-btn-giant:  20px; --line-height-btn-giant:  28px;
+  --font-size-btn-large:  16px; --line-height-btn-large:  24px;
+  --font-size-btn-medium: 14px; --line-height-btn-medium: 20px;
+  --font-size-btn-small:  12px; --line-height-btn-small:  16px;
+
+  /* Numeric */
+  --font-size-num-large:  24px; --line-height-num-large:  32px; --letter-spacing-num-large:  -0.5px;
+  --font-size-num-medium: 16px; --line-height-num-medium: 24px; --letter-spacing-num-medium: -0.25px;
+  --font-size-num-small:  12px; --line-height-num-small:  16px; --letter-spacing-num-small:  0px;
+
+  /* Spacing / Border radius (component defaults) */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  /* Button heights */
+  --btn-height-giant:  56px;
+  --btn-height-large:  48px;
+  --btn-height-medium: 40px;
+  --btn-height-small:  32px;
+}
+
+/* ── Dark Mode ─────────────────────────────────────────────── */
+[data-theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary:   #0D1117;
+    --color-background-secondary: #161B22;
+    --color-background-overlay:   rgba(0, 0, 0, 0.60);
+
+    --color-surface-default:  #1C2128;
+    --color-surface-raised:   #22272E;
+    --color-surface-overlay:  #2D333B;
+
+    --color-text-primary:     #E6EDF3;
+    --color-text-secondary:   #8B949E;
+    --color-text-disabled:    #484F58;
+    --color-text-link:        #58A6FF;
+
+    --color-border-default:   #30363D;
+    --color-border-strong:    #484F58;
+    --color-border-focus:     #58A6FF;
+
+    --color-icon-primary:     #E6EDF3;
+    --color-icon-secondary:   #8B949E;
+    --color-icon-disabled:    #484F58;
+    --color-icon-brand:       #58A6FF;
+
+    --color-status-info-default: #58A6FF;
+    --color-status-info-subtle:  rgba(88, 166, 255, 0.15);
+    --color-status-success-subtle: rgba(0, 214, 143, 0.15);
+    --color-status-warning-subtle: rgba(255, 170, 0, 0.15);
+    --color-status-error-subtle:   rgba(255, 61, 113, 0.15);
+  }
+}
+
+/* ── Utility classes ───────────────────────────────────────── */
+
+/* Text styles */
+.text-h1 { font-family: var(--font-family-base); font-size: var(--font-size-h1); line-height: var(--line-height-h1); letter-spacing: var(--letter-spacing-h1); font-weight: var(--font-weight-semibold); }
+.text-h2 { font-family: var(--font-family-base); font-size: var(--font-size-h2); line-height: var(--line-height-h2); letter-spacing: var(--letter-spacing-h2); font-weight: var(--font-weight-semibold); }
+.text-h3 { font-family: var(--font-family-base); font-size: var(--font-size-h3); line-height: var(--line-height-h3); letter-spacing: var(--letter-spacing-h3); font-weight: var(--font-weight-semibold); }
+.text-h4 { font-family: var(--font-family-base); font-size: var(--font-size-h4); line-height: var(--line-height-h4); letter-spacing: var(--letter-spacing-h4); font-weight: var(--font-weight-semibold); }
+.text-h5 { font-family: var(--font-family-base); font-size: var(--font-size-h5); line-height: var(--line-height-h5); letter-spacing: var(--letter-spacing-h5); font-weight: var(--font-weight-semibold); }
+.text-h6 { font-family: var(--font-family-base); font-size: var(--font-size-h6); line-height: var(--line-height-h6); letter-spacing: var(--letter-spacing-h6); font-weight: var(--font-weight-semibold); }
+
+.text-s1 { font-size: var(--font-size-s1); line-height: var(--line-height-s1); letter-spacing: var(--letter-spacing-s1); }
+.text-s2 { font-size: var(--font-size-s2); line-height: var(--line-height-s2); letter-spacing: var(--letter-spacing-s2); }
+
+.text-b1      { font-size: var(--font-size-b1);      line-height: var(--line-height-b1);      letter-spacing: var(--letter-spacing-b1);      font-weight: var(--font-weight-medium); }
+.text-b2      { font-size: var(--font-size-b2);      line-height: var(--line-height-b2);      letter-spacing: var(--letter-spacing-b2); }
+.text-caption { font-size: var(--font-size-caption);  line-height: var(--line-height-caption);  letter-spacing: var(--letter-spacing-caption); }
+.text-overline{ font-size: var(--font-size-overline); line-height: var(--line-height-overline); letter-spacing: var(--letter-spacing-overline); text-transform: uppercase; }
+
+.text-numeric-lg { font-family: var(--font-family-numeric); font-size: var(--font-size-num-large);  line-height: var(--line-height-num-large);  letter-spacing: var(--letter-spacing-num-large);  font-weight: var(--font-weight-semibold); }
+.text-numeric-md { font-family: var(--font-family-numeric); font-size: var(--font-size-num-medium); line-height: var(--line-height-num-medium); letter-spacing: var(--letter-spacing-num-medium); font-weight: var(--font-weight-semibold); }
+.text-numeric-sm { font-family: var(--font-family-numeric); font-size: var(--font-size-num-small);  line-height: var(--line-height-num-small);  letter-spacing: var(--letter-spacing-num-small);  font-weight: var(--font-weight-medium); }
+
+/* Color utilities */
+.color-primary   { color: var(--color-text-primary); }
+.color-secondary { color: var(--color-text-secondary); }
+.color-disabled  { color: var(--color-text-disabled); }
+.color-link      { color: var(--color-text-link); }
+.color-success   { color: var(--color-status-success-default); }
+.color-warning   { color: var(--color-status-warning-default); }
+.color-error     { color: var(--color-status-error-default); }
+.color-info      { color: var(--color-status-info-default); }
+
+/* Background utilities */
+.bg-primary   { background-color: var(--color-background-primary); }
+.bg-secondary { background-color: var(--color-background-secondary); }
+.bg-surface   { background-color: var(--color-surface-default); }
+
+/* ── Namespace Security Guard — TLP Tokens ──────────────────── */
+/* Bound to ANS namespace resolution.                           */
+/* Usage: set data-tlp="safe|caution|blocked|system" on parent */
+
+:root {
+  /* SAFE (.axq, .vrq) */
+  --tlp-safe:           #00D68F;
+  --tlp-safe-subtle:    rgba(0, 214, 143, 0.12);
+  --tlp-safe-border:    #00B37A;
+  --tlp-safe-text:      #003D2A;
+
+  /* CAUTION (.kpx) */
+  --tlp-caution:        #FFAA00;
+  --tlp-caution-subtle: rgba(255, 170, 0, 0.12);
+  --tlp-caution-border: #CC8800;
+  --tlp-caution-text:   #3D2D00;
+
+  /* BLOCKED (unknown.* / raw hex) */
+  --tlp-blocked:        #FF3D71;
+  --tlp-blocked-subtle: rgba(255, 61, 113, 0.12);
+  --tlp-blocked-border: #CC0040;
+  --tlp-blocked-text:   #3D0012;
+  --tlp-blocked-overlay:rgba(255, 61, 113, 0.08);
+
+  /* SYSTEM (.sqx, .vpx) — internal, not shown to end users */
+  --tlp-system:         #57606A;
+  --tlp-system-subtle:  rgba(87, 96, 106, 0.10);
+}
+
+/* TLP data-attribute utility classes */
+[data-tlp="safe"]    { --tlp-color: var(--tlp-safe);    --tlp-bg: var(--tlp-safe-subtle);    --tlp-bd: var(--tlp-safe-border);    --tlp-fg: var(--tlp-safe-text);    }
+[data-tlp="caution"] { --tlp-color: var(--tlp-caution); --tlp-bg: var(--tlp-caution-subtle); --tlp-bd: var(--tlp-caution-border); --tlp-fg: var(--tlp-caution-text); }
+[data-tlp="blocked"] { --tlp-color: var(--tlp-blocked); --tlp-bg: var(--tlp-blocked-subtle); --tlp-bd: var(--tlp-blocked-border); --tlp-fg: var(--tlp-blocked-text); }
+[data-tlp="system"]  { --tlp-color: var(--tlp-system);  --tlp-bg: var(--tlp-system-subtle);  --tlp-bd: var(--tlp-system);         --tlp-fg: var(--color-text-secondary); }
+
+/* TLP namespace badge */
+.tlp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--tlp-bg);
+  border: 1px solid var(--tlp-bd);
+  color: var(--tlp-fg);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-base);
+  letter-spacing: var(--letter-spacing-caption);
+}
+.tlp-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--tlp-color);
+  flex-shrink: 0;
+}
+
+/* TLP security alert panel */
+.tlp-alert {
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--tlp-bd);
+  background-color: var(--tlp-bg);
+  padding: 14px 16px;
+}
+.tlp-alert[data-tlp="blocked"] {
+  animation: tlp-pulse-blocked 2s ease-in-out infinite;
+}
+@keyframes tlp-pulse-blocked {
+  0%, 100% { box-shadow: 0 0 0 0 var(--tlp-blocked-overlay); }
+  50%       { box-shadow: 0 0 0 6px transparent; }
+}
+
+/* ── Passkey / WebAuthn button ───────────────────────────────── */
+.btn-passkey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: var(--btn-height-giant);
+  padding: 0 28px;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--gradient-crypto-card);
+  color: var(--color-text-on-accent);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-btn-giant);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 100ms ease;
+  width: 100%;
+}
+.btn-passkey:hover  { opacity: 0.92; }
+.btn-passkey:active { transform: scale(0.98); }
+.btn-passkey:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Biometric icon inside PasskeyButton */
+.btn-passkey__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton shimmer ────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #E5E7EB 25%, #F5F6FA 50%, #E5E7EB 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #30363D 25%, #484F58 50%, #30363D 75%);
+  background-size: 200% 100%;
+}
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

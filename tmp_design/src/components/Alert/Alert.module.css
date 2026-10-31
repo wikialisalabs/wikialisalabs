@@ -1,0 +1,175 @@
+/* ── Alert ────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border-left: 4px solid transparent;
+  font-size: var(--font-size-b2, 14px);
+}
+
+.alert[data-variant="success"] {
+  background: var(--color-status-success-subtle);
+  border-left-color: var(--color-status-success-default, #00D68F);
+  color: var(--color-status-success-default, #00D68F);
+}
+.alert[data-variant="error"] {
+  background: var(--color-status-error-subtle);
+  border-left-color: var(--color-status-error-default, #FF3D71);
+  color: var(--color-status-error-default, #FF3D71);
+}
+.alert[data-variant="warning"] {
+  background: var(--color-status-warning-subtle);
+  border-left-color: var(--color-status-warning-default, #FFAA00);
+  color: var(--color-status-warning-default, #FFAA00);
+}
+.alert[data-variant="info"] {
+  background: var(--color-status-info-subtle);
+  border-left-color: var(--color-status-info-default, #0095FF);
+  color: var(--color-status-info-default, #0095FF);
+}
+
+.alertIcon { flex-shrink: 0; margin-top: 1px; }
+
+.alertBody { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+
+.alertTitle {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-b2, 14px);
+}
+
+.alertText { color: var(--color-text-secondary); }
+
+.alertClose {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon-secondary);
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms;
+}
+.alertClose:hover { color: var(--color-text-primary); }
+.alertClose:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SecurityAlert
+   ═══════════════════════════════════════════════════════════════ */
+
+.secAlert {
+  padding: 16px;
+  border-radius: var(--radius-md, 12px);
+  border: 1.5px solid var(--tlp-bd, var(--color-border-default));
+  background: var(--tlp-bg, var(--color-surface-raised));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* TLP data-attribute supplies --tlp-* vars via variables.css utility classes */
+.secAlert[data-tlp="safe"]    { --tlp-bd: var(--tlp-safe-border);    --tlp-bg: var(--tlp-safe-subtle);    }
+.secAlert[data-tlp="caution"] { --tlp-bd: var(--tlp-caution-border); --tlp-bg: var(--tlp-caution-subtle); }
+.secAlert[data-tlp="blocked"] { --tlp-bd: var(--tlp-blocked-border); --tlp-bg: var(--tlp-blocked-subtle); }
+.secAlert[data-tlp="system"]  { --tlp-bd: var(--tlp-system);         --tlp-bg: var(--tlp-system-subtle);  }
+
+.secAlertHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tlpDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--tlp-color, var(--color-border-strong));
+}
+.secAlert[data-tlp="safe"]    .tlpDot { background: var(--tlp-safe); }
+.secAlert[data-tlp="caution"] .tlpDot { background: var(--tlp-caution); }
+.secAlert[data-tlp="blocked"] .tlpDot { background: var(--tlp-blocked); }
+.secAlert[data-tlp="system"]  .tlpDot { background: var(--tlp-system); }
+
+.secAlertLevel {
+  font-size: var(--font-size-caption, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.secAlert[data-tlp="safe"]    .secAlertLevel { color: var(--tlp-safe-text); }
+.secAlert[data-tlp="caution"] .secAlertLevel { color: var(--tlp-caution-text); }
+.secAlert[data-tlp="blocked"] .secAlertLevel { color: var(--tlp-blocked-text); }
+.secAlert[data-tlp="system"]  .secAlertLevel { color: var(--color-text-secondary); }
+
+.secAlertName {
+  font-size: var(--font-size-b2, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-numeric);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.secAlertClose {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon-secondary);
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 150ms;
+}
+.secAlertClose:hover { color: var(--color-text-primary); }
+.secAlertClose:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.secAlertReason {
+  margin: 0;
+  font-size: var(--font-size-b2, 14px);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.secAlertActions { display: flex; justify-content: flex-end; }
+
+.signBtn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-md, 10px);
+  border: none;
+  font-size: var(--font-size-btn-medium, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  background: var(--color-status-info-default, #0095FF);
+  color: #FFFFFF;
+  transition: opacity 150ms;
+}
+.signBtn:hover:not(:disabled) { opacity: 0.88; }
+.signBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+/* HARD RULE: blocked always appears disabled — uses CSS not just attr */
+.signBtn:disabled,
+.signBtn[data-blocked="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--color-text-disabled);
+  pointer-events: none;  /* belt & suspenders */
+}

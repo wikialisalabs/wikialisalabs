@@ -1,0 +1,49 @@
+/* ── PasskeyButton ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-md, 10px);
+  border: none;
+  background: var(--color-text-primary);
+  color: var(--color-surface-default);
+  font-size: var(--font-size-btn-medium, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: pointer;
+  transition: opacity 150ms;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { opacity: 0.88; }
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.btn[data-action="authenticate"] {
+  background: var(--color-status-info-default, #0095FF);
+  color: #FFFFFF;
+}
+
+.spinner {
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.unsupported {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-status-warning-default, #FFAA00);
+  padding: 8px 12px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-status-warning-subtle);
+  border: 1px solid var(--color-status-warning-default);
+}

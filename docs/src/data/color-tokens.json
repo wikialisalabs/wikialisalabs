@@ -1,0 +1,105 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$metadata": {
+    "name": "Axioledger Color Tokens",
+    "version": "1.0.0"
+  },
+  "color": {
+    "background": {
+      "primary":   { "$value": { "light": "#FFFFFF",   "dark": "#0D1117"  }, "$type": "color" },
+      "secondary": { "$value": { "light": "#F5F6FA",   "dark": "#161B22"  }, "$type": "color" },
+      "overlay":   { "$value": { "light": "#00000066", "dark": "#00000099"}, "$type": "color" }
+    },
+    "surface": {
+      "default":   { "$value": { "light": "#FFFFFF",   "dark": "#1C2128"  }, "$type": "color" },
+      "raised":    { "$value": { "light": "#F5F6FA",   "dark": "#22272E"  }, "$type": "color" },
+      "overlay":   { "$value": { "light": "#FFFFFF",   "dark": "#2D333B"  }, "$type": "color" }
+    },
+    "text": {
+      "primary":    { "$value": { "light": "#1E2A59",   "dark": "#E6EDF3"  }, "$type": "color" },
+      "secondary":  { "$value": { "light": "#57606A",   "dark": "#8B949E"  }, "$type": "color" },
+      "disabled":   { "$value": { "light": "#B0BAC9",   "dark": "#484F58"  }, "$type": "color" },
+      "on-accent":  { "$value": { "light": "#FFFFFF",   "dark": "#FFFFFF"  }, "$type": "color" },
+      "link":       { "$value": { "light": "#0095FF",   "dark": "#58A6FF"  }, "$type": "color" },
+      "link-visited":{ "$value": { "light": "#AF96FB",  "dark": "#AF96FB"  }, "$type": "color" }
+    },
+    "border": {
+      "default":  { "$value": { "light": "#E5E7EB", "dark": "#30363D" }, "$type": "color" },
+      "strong":   { "$value": { "light": "#B0BAC9", "dark": "#484F58" }, "$type": "color" },
+      "focus":    { "$value": { "light": "#0095FF", "dark": "#58A6FF" }, "$type": "color" },
+      "error":    { "$value": { "light": "#FF3D71", "dark": "#FF3D71" }, "$type": "color" }
+    },
+    "icon": {
+      "primary":   { "$value": { "light": "#1E2A59", "dark": "#E6EDF3" }, "$type": "color" },
+      "secondary": { "$value": { "light": "#57606A", "dark": "#8B949E" }, "$type": "color" },
+      "disabled":  { "$value": { "light": "#B0BAC9", "dark": "#484F58" }, "$type": "color" },
+      "brand":     { "$value": { "light": "#0095FF", "dark": "#58A6FF" }, "$type": "color" },
+      "on-accent": { "$value": { "light": "#FFFFFF", "dark": "#FFFFFF" }, "$type": "color" }
+    },
+    "status": {
+      "success": {
+        "default": { "$value": "#00D68F", "$type": "color" },
+        "subtle":  { "$value": { "light": "#00D68F1A", "dark": "#00D68F26" }, "$type": "color" }
+      },
+      "warning": {
+        "default": { "$value": "#FFAA00", "$type": "color" },
+        "subtle":  { "$value": { "light": "#FFAA001A", "dark": "#FFAA0026" }, "$type": "color" }
+      },
+      "error": {
+        "default": { "$value": "#FF3D71", "$type": "color" },
+        "subtle":  { "$value": { "light": "#FF3D711A", "dark": "#FF3D7126" }, "$type": "color" }
+      },
+      "info": {
+        "default": { "$value": { "light": "#0095FF", "dark": "#58A6FF" }, "$type": "color" },
+        "subtle":  { "$value": { "light": "#0095FF1A", "dark": "#58A6FF26" }, "$type": "color" }
+      }
+    },
+    "brand": {
+      "magenta": { "$value": "#FD9FDD", "$type": "color" },
+      "orange":  { "$value": "#FC7339", "$type": "color" },
+      "greeny":  { "$value": "#BEFF6C", "$type": "color" },
+      "violet":  { "$value": "#AF96FB", "$type": "color" },
+      "blue":    { "$value": "#49DBC8", "$type": "color" },
+      "yellow":  { "$value": "#FFF172", "$type": "color" }
+    },
+    "raw": {
+      "dark":      { "$value": "#000000", "$type": "color" },
+      "info":      { "$value": "#0095FF", "$type": "color" },
+      "success":   { "$value": "#00D68F", "$type": "color" },
+      "warning":   { "$value": "#FFAA00", "$type": "color" },
+      "error":     { "$value": "#FF3D71", "$type": "color" },
+      "greyscale": { "$value": "#2E3A59", "$type": "color" },
+      "white":     { "$value": "#FFFFFF", "$type": "color" }
+    }
+  },
+  "gradient": {
+    "crypto-card":  { "$value": "linear-gradient(135deg, #1E2A59 0%, #0D1117 100%)", "$type": "other" },
+    "brand-accent": { "$value": "linear-gradient(90deg, #AF96FB 0%, #49DBC8 100%)", "$type": "other" }
+  },
+  "namespace-security": {
+    "$description": "Traffic Light Protocol (TLP) — ANS Namespace Security Guard",
+    "safe": {
+      "default": { "$value": "#00D68F", "$type": "color", "$description": ".axq .vrq — Normal Account" },
+      "subtle":  { "$value": "rgba(0,214,143,0.12)", "$type": "color" },
+      "border":  { "$value": "#00B37A", "$type": "color" },
+      "text":    { "$value": "#003D2A", "$type": "color" }
+    },
+    "caution": {
+      "default": { "$value": "#FFAA00", "$type": "color", "$description": ".kpx — DeFi Warning" },
+      "subtle":  { "$value": "rgba(255,170,0,0.12)", "$type": "color" },
+      "border":  { "$value": "#CC8800", "$type": "color" },
+      "text":    { "$value": "#3D2D00", "$type": "color" }
+    },
+    "blocked": {
+      "default": { "$value": "#FF3D71", "$type": "color", "$description": "unknown.* — Phishing BLOCKED" },
+      "subtle":  { "$value": "rgba(255,61,113,0.12)", "$type": "color" },
+      "border":  { "$value": "#CC0040", "$type": "color" },
+      "text":    { "$value": "#3D0012", "$type": "color" },
+      "overlay": { "$value": "rgba(255,61,113,0.08)", "$type": "color" }
+    },
+    "system": {
+      "default": { "$value": "#57606A", "$type": "color", "$description": ".sqx .vpx — Internal nodes" },
+      "subtle":  { "$value": "rgba(87,96,106,0.10)", "$type": "color" }
+    }
+  }
+}

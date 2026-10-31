@@ -1,0 +1,205 @@
+/* =============================================================
+   Input — CSS Module
+   Spec: components/inputs.md
+   States: default → hover → focus → filled → error → disabled
+   ============================================================= */
+
+/* ── Wrapper ────────────────────────────────────────────────── */
+.wrapper {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  width:          100%;
+  font-family:    var(--font-family-base);
+}
+
+/* ── Label ──────────────────────────────────────────────────── */
+.label {
+  font-size:      var(--font-size-caption);    /* 12px */
+  line-height:    var(--line-height-caption);
+  letter-spacing: var(--letter-spacing-caption);
+  font-weight:    var(--font-weight-medium);
+  color:          var(--color-text-secondary);
+  transition:     color 120ms ease;
+}
+
+.required {
+  color: var(--color-status-error-default);
+}
+
+/* ── Field row ──────────────────────────────────────────────── */
+.fieldRow {
+  position:        relative;
+  display:         flex;
+  align-items:     center;
+  background:      var(--color-surface-default);
+  border:          1.5px solid var(--color-border-default);
+  border-radius:   var(--radius-md);           /* 12px */
+  transition:
+    border-color 120ms ease,
+    background   120ms ease,
+    box-shadow   120ms ease;
+  overflow:        hidden;
+}
+
+.fieldRow:hover:not(.state-disabled .fieldRow) {
+  border-color: var(--color-border-strong);
+}
+
+/* ── Native field ────────────────────────────────────────────── */
+.field {
+  flex:            1 1 auto;
+  min-width:       0;
+  border:          none;
+  background:      transparent;
+  color:           var(--color-text-primary);
+  font-family:     inherit;
+  font-weight:     var(--font-weight-regular);
+  caret-color:     var(--color-border-focus);
+  outline:         none;
+  /* Remove browser autofill yellow */
+  -webkit-text-fill-color: var(--color-text-primary);
+}
+
+.field::placeholder {
+  color: var(--color-text-disabled);
+}
+
+textarea.field {
+  resize:     vertical;
+  min-height: 80px;
+  padding-top:    10px;
+  padding-bottom: 10px;
+  align-self:     stretch;
+}
+
+/* ── Sizes ───────────────────────────────────────────────────── */
+.size-large  .fieldRow { height: 56px; border-radius: 12px; }
+.size-medium .fieldRow { height: 48px; border-radius: 10px; }
+.size-small  .fieldRow { height: 40px; border-radius:  8px; }
+
+.size-large  textarea.fieldRow { height: auto; min-height: 80px; }
+.size-medium textarea.fieldRow { height: auto; min-height: 72px; }
+.size-small  textarea.fieldRow { height: auto; min-height: 64px; }
+
+.size-large  .field { font-size: var(--font-size-b1); padding: 0 16px; }
+.size-medium .field { font-size: var(--font-size-b2); padding: 0 14px; }
+.size-small  .field { font-size: var(--font-size-caption); padding: 0 12px; }
+
+/* Adjust padding when adornments present */
+.size-large  .adornmentLeft  ~ .field { padding-left: 0; }
+.size-medium .adornmentLeft  ~ .field { padding-left: 0; }
+.size-small  .adornmentLeft  ~ .field { padding-left: 0; }
+
+/* ── Label sizes ─────────────────────────────────────────────── */
+.size-large  .label { font-size: var(--font-size-caption); }
+.size-medium .label { font-size: var(--font-size-caption); }
+.size-small  .label { font-size: 11px; }
+
+/* ── Adornments ─────────────────────────────────────────────── */
+.adornmentIcon {
+  display:        flex;
+  align-items:    center;
+  justify-content:center;
+  flex-shrink:    0;
+  color:          var(--color-icon-secondary);
+  pointer-events: none;
+}
+.adornmentLeft  { padding-left: 12px; }
+.adornmentRight { padding-right: 12px; }
+
+.size-large  .adornmentIcon { width: 20px; height: 20px; }
+.size-medium .adornmentIcon { width: 18px; height: 18px; }
+.size-small  .adornmentIcon { width: 16px; height: 16px; }
+
+.adornmentBtn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      none;
+  border:          none;
+  cursor:          pointer;
+  color:           var(--color-icon-secondary);
+  padding:         0 12px;
+  height:          100%;
+  transition:      color 120ms ease;
+  flex-shrink:     0;
+}
+.adornmentBtn:hover      { color: var(--color-icon-primary); }
+.adornmentBtn:focus-visible {
+  outline:        2px solid var(--color-border-focus);
+  outline-offset: -2px;
+  border-radius:  4px;
+}
+
+.size-large  .adornmentBtn { width: 20px; }
+.size-medium .adornmentBtn { width: 18px; }
+.size-small  .adornmentBtn { width: 16px; }
+
+/* ── State: Focus ────────────────────────────────────────────── */
+.state-default .fieldRow:focus-within,
+.state-filled  .fieldRow:focus-within {
+  border-color: var(--color-border-focus);
+  box-shadow:   0 0 0 3px rgba(0, 149, 255, 0.12);
+}
+
+.state-default .fieldRow:focus-within .label,
+.state-filled  .fieldRow:focus-within .label {
+  color: var(--color-status-info-default);
+}
+
+/* ── State: Error ────────────────────────────────────────────── */
+.state-error .fieldRow {
+  border-color: var(--color-status-error-default);
+  box-shadow:   0 0 0 3px rgba(255, 61, 113, 0.10);
+}
+.state-error .label {
+  color: var(--color-status-error-default);
+}
+.state-error .adornmentIcon {
+  color: var(--color-status-error-default);
+}
+
+/* ── State: Disabled ─────────────────────────────────────────── */
+.state-disabled .fieldRow {
+  background:   var(--color-surface-raised);
+  border-color: var(--color-border-default);
+  border-style: dashed;
+  cursor:       not-allowed;
+}
+.state-disabled .field {
+  color:          var(--color-text-disabled);
+  -webkit-text-fill-color: var(--color-text-disabled);
+  cursor:         not-allowed;
+}
+.state-disabled .label {
+  color: var(--color-text-disabled);
+}
+
+/* ── Caption / Helper ────────────────────────────────────────── */
+.caption {
+  margin:         0;
+  font-size:      var(--font-size-caption);
+  line-height:    var(--line-height-caption);
+  color:          var(--color-text-secondary);
+}
+
+.captionError {
+  color: var(--color-status-error-default);
+}
+
+/* ── Dark mode ───────────────────────────────────────────────── */
+[data-theme="dark"] .field {
+  -webkit-text-fill-color: var(--color-text-primary);
+}
+[data-theme="dark"] .field::placeholder {
+  color: var(--color-text-disabled);
+}
+
+/* Browser autofill dark mode fix */
+[data-theme="dark"] .field:-webkit-autofill,
+[data-theme="dark"] .field:-webkit-autofill:hover,
+[data-theme="dark"] .field:-webkit-autofill:focus {
+  -webkit-box-shadow:      0 0 0 30px var(--color-surface-default) inset;
+  -webkit-text-fill-color: var(--color-text-primary);
+}

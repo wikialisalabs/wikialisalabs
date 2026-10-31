@@ -1,0 +1,109 @@
+/* =============================================================
+   AXQ Design System — Layer 1: Primitive Tokens
+   Raw, absolute values. No aliases. No context.
+   Source of truth for all higher layers.
+
+   Naming: --axq-p-<category>-<scale>
+   ============================================================= */
+
+:root {
+
+  /* ── Greyscale ─────────────────────────────────────────────── */
+  --axq-p-grey-900: #000000;   /* Brand Black */
+  --axq-p-grey-800: #101426;
+  --axq-p-grey-700: #151A30;
+  --axq-p-grey-600: #192038;
+  --axq-p-grey-500: #222B45;   /* Dark */
+  --axq-p-grey-400: #2E3A59;   /* Secondary text */
+  --axq-p-grey-300: #8F9BB3;   /* Disable / Placeholder */
+  --axq-p-grey-200: #C5CEE0;   /* Disabled text */
+  --axq-p-grey-100: #E4E9F2;   /* Disabled bg */
+  --axq-p-grey-50:  #EDF1F7;   /* Lightest surface */
+  --axq-p-white:    #FFFFFF;
+
+  /* ── Status (500 = default) ────────────────────────────────── */
+  --axq-p-blue-500:   #0095FF;   /* Info */
+  --axq-p-green-500:  #00D68F;   /* Success */
+  --axq-p-yellow-500: #FFAA00;   /* Warning */
+  --axq-p-red-500:    #FF3D71;   /* Error / Danger */
+
+  /* ── Brand accent palette ──────────────────────────────────── */
+  --axq-p-brand-teal:   #49DBC8;
+  --axq-p-brand-green:  #BEFF6C;
+  --axq-p-brand-orange: #FC7339;
+  --axq-p-brand-pink:   #FD9FDD;
+  --axq-p-brand-purple: #AF96FB;
+  --axq-p-brand-yellow: #FFF172;
+  --axq-p-brand-grey:   #EFEFEF;
+
+  /* ── Dark mode raw ─────────────────────────────────────────── */
+  --axq-p-dark-bg-0:   #0D1117;
+  --axq-p-dark-bg-1:   #161B22;
+  --axq-p-dark-bg-2:   #1C2128;
+  --axq-p-dark-bg-3:   #22272E;
+  --axq-p-dark-bg-4:   #2D333B;
+  --axq-p-dark-border: #30363D;
+  --axq-p-dark-muted:  #484F58;
+  --axq-p-dark-text-1: #E6EDF3;
+  --axq-p-dark-text-2: #8B949E;
+  --axq-p-dark-blue:   #58A6FF;
+
+  /* ── Radius ────────────────────────────────────────────────── */
+  --axq-p-radius-none: 0px;
+  --axq-p-radius-xs:   2px;
+  --axq-p-radius-sm:   4px;
+  --axq-p-radius-md:   8px;
+  --axq-p-radius-lg:   12px;
+  --axq-p-radius-xl:   16px;
+  --axq-p-radius-2xl:  24px;   /* = button pill */
+  --axq-p-radius-3xl:  32px;
+  --axq-p-radius-full: 9999px;
+
+  /* ── Spacing ───────────────────────────────────────────────── */
+  --axq-p-space-0:   0px;
+  --axq-p-space-2:   2px;
+  --axq-p-space-4:   4px;
+  --axq-p-space-6:   6px;
+  --axq-p-space-8:   8px;
+  --axq-p-space-10:  10px;
+  --axq-p-space-12:  12px;
+  --axq-p-space-14:  14px;
+  --axq-p-space-16:  16px;
+  --axq-p-space-20:  20px;
+  --axq-p-space-24:  24px;
+  --axq-p-space-32:  32px;
+  --axq-p-space-40:  40px;
+  --axq-p-space-48:  48px;
+  --axq-p-space-56:  56px;
+  --axq-p-space-64:  64px;
+  --axq-p-space-77:  77px;   /* button-padding-x */
+  --axq-p-space-80:  80px;
+  --axq-p-space-96:  96px;
+  --axq-p-space-128: 128px;
+
+  /* ── Icon size ─────────────────────────────────────────────── */
+  --axq-p-icon-sm:       16px;
+  --axq-p-icon-standard: 20px;
+  --axq-p-icon-lg:       24px;
+
+  /* ── Font family ───────────────────────────────────────────── */
+  --axq-p-font-family-base:    'Work Sans', sans-serif;
+  --axq-p-font-family-numeric: 'Work Sans', monospace;
+
+  /* ── Font size ─────────────────────────────────────────────── */
+  --axq-p-size-10: 10px;
+  --axq-p-size-12: 12px;
+  --axq-p-size-14: 14px;
+  --axq-p-size-16: 16px;
+  --axq-p-size-20: 20px;
+  --axq-p-size-24: 24px;
+  --axq-p-size-34: 34px;
+  --axq-p-size-48: 48px;
+  --axq-p-size-60: 60px;
+  --axq-p-size-96: 96px;
+
+  /* ── Font weight ───────────────────────────────────────────── */
+  --axq-p-weight-regular:  400;
+  --axq-p-weight-medium:   500;
+  --axq-p-weight-semibold: 600;
+}

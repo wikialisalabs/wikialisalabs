@@ -1,0 +1,73 @@
+/* ─── Base ───────────────────────────────────────────────────────────────────
+   The .skeleton shimmer class is defined in tokens/variables.css.
+   We extend it here with additional variant and animation styles.
+   ─────────────────────────────────────────────────────────────────────────── */
+.base {
+  display: block;
+}
+
+/* ─── Text variant ───────────────────────────────────────────────────────────── */
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textLine {
+  display: block;
+  border-radius: 4px;
+}
+
+/* ─── Animation overrides ────────────────────────────────────────────────────── */
+
+/* Pulse: overrides the shimmer gradient with an opacity animation */
+.animPulse {
+  background: var(--color-surface-raised) !important;
+  animation: skeleton-pulse 1.2s ease-in-out infinite !important;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* None: no animation, static placeholder */
+.animNone {
+  animation: none !important;
+}
+
+/* ─── Preset layouts ─────────────────────────────────────────────────────────── */
+.presetListItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.presetCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.presetProfile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.presetLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.presetProfile .presetLines {
+  width: 200px;
+  align-items: center;
+}

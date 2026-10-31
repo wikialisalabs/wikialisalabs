@@ -1,0 +1,194 @@
+/* =============================================================
+   Axioledger Design System — Icon Token System
+   Áp dụng trực tiếp cho asset/icon/linear/ và asset/icon/bold/
+   Không dùng emoji bên ngoài — toàn bộ icon từ SVG nội bộ
+   ============================================================= */
+
+/* ── Icon Color Tokens ─────────────────────────────────────── */
+:root {
+  --icon-primary:    #1E2A59;   /* Default stroke — dark navy */
+  --icon-secondary:  #57606A;   /* Muted / supporting icon */
+  --icon-disabled:   #B0BAC9;   /* Disabled state */
+  --icon-brand:      #0095FF;   /* Accent / CTA */
+  --icon-success:    #22C55E;
+  --icon-warning:    #F59E0B;
+  --icon-error:      #EF4444;
+  --icon-on-accent:  #FFFFFF;   /* Icon trên nền màu đậm */
+  --icon-crypto:     #AF96FB;   /* Dùng cho crypto currency icons */
+  --icon-rwa:        #F59E0B;   /* RWA / institutional icons */
+
+  /* Size tokens */
+  --icon-size-xs:    12px;
+  --icon-size-sm:    16px;
+  --icon-size-md:    20px;
+  --icon-size-base:  24px;      /* Default */
+  --icon-size-lg:    32px;
+  --icon-size-xl:    40px;
+  --icon-size-2xl:   48px;
+
+  /* Stroke width tokens */
+  --icon-stroke-thin:   1px;
+  --icon-stroke-base:   1.5px;  /* Linear default */
+  --icon-stroke-medium: 2px;
+}
+
+[data-theme="dark"] {
+  --icon-primary:    #E8EBF4;
+  --icon-secondary:  #8B95A8;
+  --icon-disabled:   #3D4558;
+  --icon-brand:      #41B3FF;
+  --icon-success:    #34D399;
+  --icon-warning:    #FBBF24;
+  --icon-error:      #F87171;
+  --icon-on-accent:  #FFFFFF;
+  --icon-crypto:     #C4B5FD;
+  --icon-rwa:        #FCD34D;
+}
+
+/* ── Base Icon Component ───────────────────────────────────── */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* SVG bên trong sẽ kế thừa currentColor */
+  color: var(--icon-primary);
+  width: var(--icon-size-base);
+  height: var(--icon-size-base);
+}
+
+/* Buộc SVG con dùng currentColor thay vì hardcode màu */
+.icon svg,
+.icon svg path,
+.icon svg rect,
+.icon svg circle,
+.icon svg line,
+.icon svg polyline,
+.icon svg polygon {
+  stroke: currentColor;
+  fill: none;            /* linear icons: stroke only */
+  stroke-width: var(--icon-stroke-base);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.15s ease;
+}
+
+/* Bold icons: fill thay vì stroke */
+.icon--bold svg path,
+.icon--bold svg rect,
+.icon--bold svg circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Duotone — fill opacity */
+.icon--duotone svg path:last-child {
+  opacity: 0.4;
+}
+
+/* ── Size Modifiers ────────────────────────────────────────── */
+.icon--xs   { width: var(--icon-size-xs);   height: var(--icon-size-xs);   }
+.icon--sm   { width: var(--icon-size-sm);   height: var(--icon-size-sm);   }
+.icon--md   { width: var(--icon-size-md);   height: var(--icon-size-md);   }
+.icon--base { width: var(--icon-size-base); height: var(--icon-size-base); }
+.icon--lg   { width: var(--icon-size-lg);   height: var(--icon-size-lg);   }
+.icon--xl   { width: var(--icon-size-xl);   height: var(--icon-size-xl);   }
+.icon--2xl  { width: var(--icon-size-2xl);  height: var(--icon-size-2xl);  }
+
+/* ── Color Modifiers ───────────────────────────────────────── */
+.icon--primary   { color: var(--icon-primary);   }
+.icon--secondary { color: var(--icon-secondary); }
+.icon--disabled  { color: var(--icon-disabled);  cursor: not-allowed; }
+.icon--brand     { color: var(--icon-brand);     }
+.icon--success   { color: var(--icon-success);   }
+.icon--warning   { color: var(--icon-warning);   }
+.icon--error     { color: var(--icon-error);     }
+.icon--on-accent { color: var(--icon-on-accent); }
+.icon--crypto    { color: var(--icon-crypto);    }
+.icon--rwa       { color: var(--icon-rwa);       }
+
+/* ── Stroke Width Modifiers ────────────────────────────────── */
+.icon--stroke-thin   svg path { stroke-width: var(--icon-stroke-thin);   }
+.icon--stroke-medium svg path { stroke-width: var(--icon-stroke-medium); }
+
+/* ── Icon Button (clickable icon) ─────────────────────────── */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--icon-secondary);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.icon-btn:hover {
+  background: var(--color-surface-raised, #F5F6FA);
+  color: var(--icon-primary);
+}
+.icon-btn:active {
+  background: var(--color-border-default, #E5E7EB);
+}
+.icon-btn--brand:hover {
+  background: rgba(0, 149, 255, 0.1);
+  color: var(--icon-brand);
+}
+
+/* ── Icon + Label (menu item, nav item) ───────────────────── */
+.icon-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary, #57606A);
+}
+.icon-label .icon { color: inherit; }
+.icon-label:hover  { color: var(--color-text-primary, #1E2A59); }
+
+/* ── Icon Grid (catalog/picker layout) ───────────────────── */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 4px;
+}
+.icon-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.icon-grid-item:hover {
+  background: var(--color-surface-raised, #F5F6FA);
+}
+.icon-grid-item span {
+  font-size: 9px;
+  color: var(--icon-secondary);
+  text-align: center;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+/* ── Inline SVG override: strip hardcoded fill/stroke ─────── */
+/*
+  Khi nhúng SVG trực tiếp vào HTML, thêm class .icon-svg
+  để override stroke hardcode (#101426, #292D32, etc.)
+*/
+.icon-svg path,
+.icon-svg rect,
+.icon-svg circle,
+.icon-svg line,
+.icon-svg polyline {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+.icon-svg--bold path,
+.icon-svg--bold rect,
+.icon-svg--bold circle {
+  fill: currentColor !important;
+  stroke: none !important;
+}

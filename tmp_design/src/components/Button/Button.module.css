@@ -1,0 +1,333 @@
+/* =============================================================
+   Button — CSS Module
+   Spec: components/buttons.md
+   A11y: WCAG 2.1 AA — contrast ratios enforced per color
+   ============================================================= */
+
+/* ── Base ──────────────────────────────────────────────────── */
+.btn {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             8px;
+  border:          1.5px solid transparent;
+  border-radius:   var(--radius-pill);   /* default full-round; sizes override */
+  font-family:     var(--font-family-base);
+  font-weight:     var(--font-weight-semibold);
+  letter-spacing:  0.15px;
+  cursor:          pointer;
+  text-decoration: none;
+  white-space:     nowrap;
+  transition:
+    background-color 120ms ease,
+    border-color     120ms ease,
+    color            120ms ease,
+    opacity          120ms ease,
+    transform         80ms ease;
+  /* Prevent text selection on rapid clicks */
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Focus ring — keyboard only, not mouse */
+.btn:focus-visible {
+  outline:        2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Sizes ──────────────────────────────────────────────────── */
+.size-giant {
+  height:          var(--btn-height-giant);   /* 56px */
+  padding:         0 24px;
+  font-size:       var(--font-size-btn-giant);
+  line-height:     var(--line-height-btn-giant);
+  border-radius:   var(--radius-lg);          /* 16px per spec */
+}
+
+.size-large {
+  height:          var(--btn-height-large);   /* 48px */
+  padding:         0 20px;
+  font-size:       var(--font-size-btn-large);
+  line-height:     var(--line-height-btn-large);
+  border-radius:   14px;
+}
+
+.size-medium {
+  height:          var(--btn-height-medium);  /* 40px */
+  padding:         0 16px;
+  font-size:       var(--font-size-btn-medium);
+  line-height:     var(--line-height-btn-medium);
+  border-radius:   var(--radius-md);          /* 12px */
+}
+
+.size-small {
+  height:          var(--btn-height-small);   /* 32px */
+  padding:         0 12px;
+  font-size:       var(--font-size-btn-small);
+  line-height:     var(--line-height-btn-small);
+  border-radius:   10px;
+}
+
+/* ── Full-width ─────────────────────────────────────────────── */
+.fullWidth {
+  width: 100%;
+}
+
+/* ── Icon-only (square) ─────────────────────────────────────── */
+.iconOnly { padding: 0; }
+.iconOnly.size-giant  { width: var(--btn-height-giant);  }
+.iconOnly.size-large  { width: var(--btn-height-large);  }
+.iconOnly.size-medium { width: var(--btn-height-medium); }
+.iconOnly.size-small  { width: var(--btn-height-small);  }
+
+/* ── Icon spacing ───────────────────────────────────────────── */
+.iconLeft, .iconRight {
+  display:     inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.size-giant  .iconLeft, .size-giant  .iconRight { width: 24px; height: 24px; }
+.size-large  .iconLeft, .size-large  .iconRight { width: 20px; height: 20px; }
+.size-medium .iconLeft, .size-medium .iconRight { width: 16px; height: 16px; }
+.size-small  .iconLeft, .size-small  .iconRight { width: 14px; height: 14px; }
+
+/* ── Label ──────────────────────────────────────────────────── */
+.label {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+/* ── Disabled ───────────────────────────────────────────────── */
+.disabled {
+  cursor:         not-allowed;
+  pointer-events: none;
+  opacity:        1; /* individual variant/color handles exact disabled colors */
+}
+
+/* ── Loading ────────────────────────────────────────────────── */
+.loading {
+  cursor: wait;
+  pointer-events: none;
+}
+.loadingText {
+  visibility: hidden;
+  width: 0;
+  overflow: hidden;
+}
+.spinner {
+  width:  1.1em;
+  height: 1.1em;
+  animation: btn-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VARIANT: FILLED
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Filled — Black (primary brand) ───────────────────────── */
+.variant-filled.color-black {
+  background:  #000000;
+  color:       var(--color-text-on-accent);
+  border-color: #000000;
+}
+.variant-filled.color-black:hover:not(.disabled)  { background: #1A1A1A; border-color: #1A1A1A; }
+.variant-filled.color-black:active:not(.disabled) { background: #333333; border-color: #333333; transform: scale(0.98); }
+
+/* ── Filled — Blue (info) ───────────────────────────────────── */
+.variant-filled.color-blue {
+  background:   var(--color-status-info-default);
+  color:        var(--color-text-on-accent);
+  border-color: var(--color-status-info-default);
+}
+.variant-filled.color-blue:hover:not(.disabled)  { background: #0077CC; border-color: #0077CC; }
+.variant-filled.color-blue:active:not(.disabled) { background: #0057C2; border-color: #0057C2; transform: scale(0.98); }
+
+/* ── Filled — Green
+     ⚠️ A11y: white text on #00D68F fails WCAG AA (ratio 2.1:1)
+     → use --color-text-primary (#1E2A59) ─────────────────────── */
+.variant-filled.color-green {
+  background:   var(--color-status-success-default);
+  color:        var(--color-text-primary);   /* DARK text — a11y compliance */
+  border-color: var(--color-status-success-default);
+}
+.variant-filled.color-green:hover:not(.disabled)  { background: #00B387; border-color: #00B387; }
+.variant-filled.color-green:active:not(.disabled) { background: #00997A; border-color: #00997A; transform: scale(0.98); }
+
+/* ── Filled — Yellow
+     ⚠️ A11y: white text on #FFF172 fails WCAG AA (ratio 1.2:1)
+     → use --color-text-primary (#1E2A59) ─────────────────────── */
+.variant-filled.color-yellow {
+  background:   #FFF172;
+  color:        var(--color-text-primary);   /* DARK text — a11y compliance */
+  border-color: #FFF172;
+}
+.variant-filled.color-yellow:hover:not(.disabled)  { background: #FFE830; border-color: #FFE830; }
+.variant-filled.color-yellow:active:not(.disabled) { background: #FFDD00; border-color: #FFDD00; transform: scale(0.98); }
+
+/* ── Filled — Orange ────────────────────────────────────────── */
+.variant-filled.color-orange {
+  background:   #FC7339;
+  color:        var(--color-text-on-accent);
+  border-color: #FC7339;
+}
+.variant-filled.color-orange:hover:not(.disabled)  { background: #E55A20; border-color: #E55A20; }
+.variant-filled.color-orange:active:not(.disabled) { background: #CC4A10; border-color: #CC4A10; transform: scale(0.98); }
+
+/* ── Filled — Error/Pink ────────────────────────────────────── */
+.variant-filled.color-error {
+  background:   var(--color-status-error-default);
+  color:        var(--color-text-on-accent);
+  border-color: var(--color-status-error-default);
+}
+.variant-filled.color-error:hover:not(.disabled)  { background: #DB2C66; border-color: #DB2C66; }
+.variant-filled.color-error:active:not(.disabled) { background: #B81D5B; border-color: #B81D5B; transform: scale(0.98); }
+
+/* ── Filled — Warning
+     ⚠️ A11y: white text on #FFAA00 fails WCAG AA (ratio 1.8:1)
+     → use --color-text-primary (#1E2A59) ─────────────────────── */
+.variant-filled.color-navy {
+  background:   #1E2A59;
+  color:        var(--color-text-on-accent);
+  border-color: #1E2A59;
+}
+.variant-filled.color-navy:hover:not(.disabled)  { background: #2A3A7A; border-color: #2A3A7A; }
+.variant-filled.color-navy:active:not(.disabled) { background: #162048; border-color: #162048; transform: scale(0.98); }
+
+/* ── Filled — White (on dark backgrounds) ───────────────────── */
+.variant-filled.color-white {
+  background:   #FFFFFF;
+  color:        #1E2A59;
+  border-color: #FFFFFF;
+}
+.variant-filled.color-white:hover:not(.disabled)  { background: #F0F0F0; border-color: #F0F0F0; }
+.variant-filled.color-white:active:not(.disabled) { background: #E0E0E0; border-color: #E0E0E0; transform: scale(0.98); }
+
+/* ── Filled — Disabled (ALL colors) ────────────────────────── */
+.variant-filled.disabled {
+  background:   var(--color-surface-raised);
+  color:        var(--color-text-disabled);
+  border-color: var(--color-surface-raised);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VARIANT: OUTLINED
+   ══════════════════════════════════════════════════════════════ */
+
+.variant-outlined {
+  background: transparent;
+}
+
+.variant-outlined.color-black {
+  border-color: #000000;
+  color:        #000000;
+}
+.variant-outlined.color-black:hover:not(.disabled)  { background: rgba(0,0,0,0.06); }
+.variant-outlined.color-black:active:not(.disabled) { background: rgba(0,0,0,0.12); transform: scale(0.98); }
+
+.variant-outlined.color-blue {
+  border-color: var(--color-status-info-default);
+  color:        var(--color-status-info-default);
+}
+.variant-outlined.color-blue:hover:not(.disabled)  { background: var(--color-status-info-subtle); }
+.variant-outlined.color-blue:active:not(.disabled) { background: rgba(0,149,255,0.16); transform: scale(0.98); }
+
+.variant-outlined.color-green {
+  border-color: var(--color-status-success-default);
+  color:        #00997A;   /* shade-700 — accessible on white */
+}
+.variant-outlined.color-green:hover:not(.disabled)  { background: var(--color-status-success-subtle); }
+.variant-outlined.color-green:active:not(.disabled) { background: rgba(0,214,143,0.16); transform: scale(0.98); }
+
+.variant-outlined.color-yellow {
+  border-color: #E6C800;
+  color:        #7A6400;
+}
+.variant-outlined.color-yellow:hover:not(.disabled)  { background: rgba(255,241,114,0.15); }
+.variant-outlined.color-yellow:active:not(.disabled) { background: rgba(255,241,114,0.25); transform: scale(0.98); }
+
+.variant-outlined.color-orange {
+  border-color: #FC7339;
+  color:        #CC4A10;
+}
+.variant-outlined.color-orange:hover:not(.disabled)  { background: rgba(252,115,57,0.08); }
+.variant-outlined.color-orange:active:not(.disabled) { background: rgba(252,115,57,0.16); transform: scale(0.98); }
+
+.variant-outlined.color-error {
+  border-color: var(--color-status-error-default);
+  color:        var(--color-status-error-default);
+}
+.variant-outlined.color-error:hover:not(.disabled)  { background: var(--color-status-error-subtle); }
+.variant-outlined.color-error:active:not(.disabled) { background: rgba(255,61,113,0.16); transform: scale(0.98); }
+
+.variant-outlined.color-navy {
+  border-color: #1E2A59;
+  color:        #1E2A59;
+}
+.variant-outlined.color-navy:hover:not(.disabled)  { background: rgba(30,42,89,0.08); }
+.variant-outlined.color-navy:active:not(.disabled) { background: rgba(30,42,89,0.16); transform: scale(0.98); }
+
+.variant-outlined.color-white {
+  border-color: rgba(255,255,255,0.6);
+  color:        #FFFFFF;
+}
+.variant-outlined.color-white:hover:not(.disabled)  { background: rgba(255,255,255,0.10); }
+.variant-outlined.color-white:active:not(.disabled) { background: rgba(255,255,255,0.20); transform: scale(0.98); }
+
+.variant-outlined.disabled {
+  border-color: var(--color-border-default);
+  color:        var(--color-text-disabled);
+  background:   transparent;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VARIANT: GHOST
+   ══════════════════════════════════════════════════════════════ */
+
+.variant-ghost {
+  background:   transparent;
+  border-color: transparent;
+}
+
+.variant-ghost.color-black { color: #000000; }
+.variant-ghost.color-blue  { color: var(--color-status-info-default); }
+.variant-ghost.color-green { color: #00997A; }
+.variant-ghost.color-yellow{ color: #7A6400; }
+.variant-ghost.color-orange{ color: #CC4A10; }
+.variant-ghost.color-error { color: var(--color-status-error-default); }
+.variant-ghost.color-navy  { color: #1E2A59; }
+.variant-ghost.color-white { color: #FFFFFF; }
+
+.variant-ghost:hover:not(.disabled)  { background: rgba(0,0,0,0.05); }
+.variant-ghost:active:not(.disabled) { background: rgba(0,0,0,0.10); transform: scale(0.98); }
+
+.variant-ghost.color-white:hover:not(.disabled)  { background: rgba(255,255,255,0.10); }
+.variant-ghost.color-white:active:not(.disabled) { background: rgba(255,255,255,0.20); }
+
+.variant-ghost.disabled {
+  color:      var(--color-text-disabled);
+  background: transparent;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE — token variables auto-update via data-theme="dark"
+   Only override values that don't use CSS variables already.
+   ══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .variant-filled.color-black {
+  background:   #FFFFFF;
+  color:        #000000;
+  border-color: #FFFFFF;
+}
+[data-theme="dark"] .variant-filled.color-black:hover:not(.disabled)  { background: #E0E0E0; }
+[data-theme="dark"] .variant-filled.color-black:active:not(.disabled) { background: #C0C0C0; }
+
+[data-theme="dark"] .variant-outlined.color-black {
+  border-color: rgba(255,255,255,0.7);
+  color:        #FFFFFF;
+}
+[data-theme="dark"] .variant-ghost.color-black { color: #FFFFFF; }

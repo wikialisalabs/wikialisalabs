@@ -1,0 +1,56 @@
+/* ── AddressDisplay ──────────────────────────────────────────── */
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-default);
+  max-width: 300px;
+}
+
+.warningIcon { flex-shrink: 0; display: flex; align-items: center; }
+
+.address {
+  font-family: var(--font-family-numeric);
+  font-size: var(--font-size-b2, 14px);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.tlpBadge {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill, 999px);
+  flex-shrink: 0;
+}
+.tlpBadge[data-tlp="safe"]    { background: var(--tlp-safe-subtle);    color: var(--tlp-safe-text);    }
+.tlpBadge[data-tlp="caution"] { background: var(--tlp-caution-subtle); color: var(--tlp-caution-text); }
+.tlpBadge[data-tlp="blocked"] { background: var(--tlp-blocked-subtle); color: var(--tlp-blocked-text); }
+.tlpBadge[data-tlp="system"]  { background: var(--tlp-system-subtle);  color: var(--color-text-secondary); }
+
+.copyBtn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-icon-secondary);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 150ms;
+}
+.copyBtn:hover { color: var(--color-text-primary); }
+.copyBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

@@ -1,0 +1,29 @@
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/src/**"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/public/**"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, immutable"
+
+[build]
+  publish = "."
+  command = ""
+
+[[redirects]]
+  from = "/preview"
+  to = "/preview/"
+  status = 301
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}

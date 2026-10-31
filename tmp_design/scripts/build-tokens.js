@@ -1,0 +1,269 @@
+#!/usr/bin/env node
+/**
+ * scripts/build-tokens.js
+ * @axioledger/axio-design-system v6.0.0 — Token Build Pipeline
+ *
+ * Implements the Style Dictionary pattern without a hard dependency on the
+ * @style-dictionary package (zero extra install). Reads the DTCG-format JSON
+ * token sources and emits three artefacts:
+ *
+ *   1. tokens/variables.css   — CSS Custom Properties (light + dark)
+ *   2. tokens/tokens.gen.ts   — TypeScript auto-generated constants (dry run,
+ *                               merges into src/tokens.ts on review)
+ *   3. tokens/tailwind.gen.js — Tailwind theme extension (auto-generated,
+ *                               merges into tokens/tailwind-tokens.js on review)
+ *
+ * Sources (DTCG W3C format):
+ *   tokens/color-tokens.json
+ *   tokens/typography-tokens.json
+ *   tokens/spacing-tokens.json  (if present)
+ *
+ * Run: pnpm build:tokens
+ *
+ * CI Note: This script is also called by the axio-ds-validate GitHub Actions
+ * job to assert the generated variables.css is up to date with the JSON source.
+ * If the output differs, the job fails (use --check flag).
+ */
+
+const fs   = require('fs');
+const path = require('path');
+
+const ROOT       = path.resolve(__dirname, '..');
+const TOKENS_DIR = path.join(ROOT, 'tokens');
+
+const SOURCES = [
+  path.join(TOKENS_DIR, 'color-tokens.json'),
+  path.join(TOKENS_DIR, 'typography-tokens.json'),
+];
+
+// Optional — created by spacing export from Figma
+const SPACING_SOURCE = path.join(TOKENS_DIR, 'spacing-tokens.json');
+if (fs.existsSync(SPACING_SOURCE)) SOURCES.push(SPACING_SOURCE);
+
+const OUT_CSS      = path.join(TOKENS_DIR, 'variables.css');
+const OUT_TS_GEN   = path.join(TOKENS_DIR, 'tokens.gen.ts');
+const OUT_TW_GEN   = path.join(TOKENS_DIR, 'tailwind.gen.js');
+
+const CHECK_MODE   = process.argv.includes('--check');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Flatten a nested DTCG token tree into a flat map of
+ *   "path/to/token" → { $value, $type, $description?, $mode? }
+ *
+ * Supports DTCG W3C format:
+ *   { "color": { "brand": { "primary": { "$value": "#0095FF", "$type": "color" } } } }
+ */
+function flattenTokens(obj, prefix = '') {
+  const result = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (key.startsWith('$')) continue; // skip $schema, $version etc.
+    const p = prefix ? `${prefix}/${key}` : key;
+    if (val && typeof val === 'object' && !('$value' in val)) {
+      Object.assign(result, flattenTokens(val, p));
+    } else if (val && '$value' in val) {
+      result[p] = val;
+    }
+  }
+  return result;
+}
+
+/**
+ * Convert a token path to a CSS custom property name.
+ * "color/text/primary" → "--axq-color-text-primary"
+ * "spacing/4"          → "--axq-p-space-4"
+ */
+function toCSSVar(tokenPath) {
+  return '--axq-' + tokenPath.replace(/\//g, '-').replace(/\s+/g, '-').toLowerCase();
+}
+
+/**
+ * Convert a token path to a JavaScript/TypeScript constant name.
+ * "color/text/primary" → "colorTextPrimary"
+ */
+function toJSName(tokenPath) {
+  return tokenPath
+    .split('/')
+    .map((part, i) => i === 0 ? part : part[0].toUpperCase() + part.slice(1))
+    .join('')
+    .replace(/[^a-zA-Z0-9_]/g, '_');
+}
+
+/**
+ * Resolve a DTCG alias like "{color.brand.primary}" to its raw value.
+ * Falls back to the alias string if not found.
+ */
+function resolveAlias(value, allTokens) {
+  if (typeof value !== 'string') return value;
+  const match = value.match(/^\{([^}]+)\}$/);
+  if (!match) return value;
+  const refPath = match[1].replace(/\./g, '/');
+  return allTokens[refPath]?.$value ?? value;
+}
+
+// ─── Load & merge all token sources ───────────────────────────────────────────
+
+let merged = {};
+for (const src of SOURCES) {
+  if (!fs.existsSync(src)) {
+    console.warn(`[warn] Token source not found: ${src}`);
+    continue;
+  }
+  const raw = JSON.parse(fs.readFileSync(src, 'utf8'));
+  Object.assign(merged, flattenTokens(raw));
+}
+
+const tokenCount = Object.keys(merged).length;
+console.log(`[tokens] Loaded ${tokenCount} tokens from ${SOURCES.length} sources`);
+
+// ─── Resolve aliases ──────────────────────────────────────────────────────────
+
+for (const [path_, token] of Object.entries(merged)) {
+  if (typeof token.$value === 'string' && token.$value.startsWith('{')) {
+    const resolved = resolveAlias(token.$value, merged);
+    merged[path_] = { ...token, $value: resolved, $alias: token.$value };
+  }
+}
+
+// ─── Separate light/dark mode tokens ─────────────────────────────────────────
+
+const lightTokens = {};
+const darkTokens  = {};
+
+for (const [p, token] of Object.entries(merged)) {
+  if (p.includes('/dark/') || p.startsWith('dark/')) {
+    darkTokens[p] = token;
+  } else {
+    lightTokens[p] = token;
+  }
+}
+
+// ─── Generate CSS Custom Properties ───────────────────────────────────────────
+
+const now = new Date().toISOString();
+
+const cssLines = [
+  `/* =============================================================`,
+  `   @axioledger/axio-design-system — CSS Custom Properties`,
+  `   AUTO-GENERATED by scripts/build-tokens.js`,
+  `   Source: tokens/color-tokens.json + typography-tokens.json`,
+  `   Generated: ${now}`,
+  `   DO NOT EDIT MANUALLY — edit the JSON sources, then run:`,
+  `     pnpm build:tokens`,
+  `   ============================================================= */`,
+  ``,
+  `:root {`,
+];
+
+for (const [p, token] of Object.entries(lightTokens)) {
+  const varName = toCSSVar(p);
+  const value   = token.$value;
+  const comment = token.$description ? `  /* ${token.$description} */` : '';
+  const alias   = token.$alias ? `  /* alias: ${token.$alias} */` : '';
+  cssLines.push(`  ${varName}: ${value};${comment || alias}`);
+}
+
+cssLines.push(`}`);
+cssLines.push(``);
+
+if (Object.keys(darkTokens).length > 0) {
+  cssLines.push(`[data-theme="dark"],`);
+  cssLines.push(`@media (prefers-color-scheme: dark) {`);
+  cssLines.push(`  :root {`);
+  for (const [p, token] of Object.entries(darkTokens)) {
+    // Strip leading "dark/" prefix for the var name
+    const cleanPath = p.replace(/^dark\//, '').replace(/\/dark\//, '/');
+    const varName   = toCSSVar(cleanPath);
+    cssLines.push(`    ${varName}: ${token.$value};`);
+  }
+  cssLines.push(`  }`);
+  cssLines.push(`}`);
+  cssLines.push(``);
+}
+
+const cssOutput = cssLines.join('\n');
+
+// ─── Generate TypeScript constants ────────────────────────────────────────────
+
+const tsLines = [
+  `// tokens.gen.ts — AUTO-GENERATED by scripts/build-tokens.js`,
+  `// Generated: ${now}`,
+  `// DO NOT EDIT MANUALLY. Review and merge into src/tokens.ts.`,
+  `// Source: tokens/color-tokens.json + typography-tokens.json`,
+  ``,
+  `/** Auto-generated flat token map from JSON sources */`,
+  `export const GEN_TOKENS = {`,
+];
+
+for (const [p, token] of Object.entries(lightTokens)) {
+  const jsName = toJSName(p);
+  const value  = JSON.stringify(token.$value);
+  const type   = token.$type ? ` /* ${token.$type} */` : '';
+  tsLines.push(`  ${jsName}: ${value},${type}`);
+}
+
+tsLines.push(`} as const;`);
+tsLines.push(``);
+tsLines.push(`export type GenTokenKey = keyof typeof GEN_TOKENS;`);
+tsLines.push(``);
+
+const tsOutput = tsLines.join('\n');
+
+// ─── Generate Tailwind config extension ───────────────────────────────────────
+
+const colorEntries = Object.entries(lightTokens)
+  .filter(([p, t]) => t.$type === 'color')
+  .map(([p, t]) => `  '${toCSSVar(p).replace('--', '')}': 'var(${toCSSVar(p)})',`)
+  .join('\n');
+
+const twOutput = [
+  `// tailwind.gen.js — AUTO-GENERATED by scripts/build-tokens.js`,
+  `// Generated: ${now}`,
+  `// DO NOT EDIT MANUALLY. Review and merge into tokens/tailwind-tokens.js.`,
+  ``,
+  `/** @type {import('tailwindcss').Config['theme']} */`,
+  `const genTokens = {`,
+  `  colors: {`,
+  colorEntries,
+  `  },`,
+  `};`,
+  ``,
+  `module.exports = genTokens;`,
+  ``,
+].join('\n');
+
+// ─── Write or check ───────────────────────────────────────────────────────────
+
+let exitCode = 0;
+
+if (CHECK_MODE) {
+  // --check: compare generated output against committed file
+  console.log('[check] Verifying variables.css is up to date with JSON sources...');
+  if (fs.existsSync(OUT_CSS)) {
+    const committed = fs.readFileSync(OUT_CSS, 'utf8');
+    // Strip timestamp line before comparing (it always differs)
+    const normalize = s => s.replace(/Generated: [\d\-T:.Z]+/, 'Generated: <TIMESTAMP>');
+    if (normalize(committed) !== normalize(cssOutput)) {
+      console.error('✗ variables.css is OUT OF DATE with token JSON sources.');
+      console.error('  Run: pnpm build:tokens   to regenerate.');
+      exitCode = 1;
+    } else {
+      console.log('✓ variables.css is up to date');
+    }
+  } else {
+    console.error('✗ variables.css does not exist. Run: pnpm build:tokens');
+    exitCode = 1;
+  }
+} else {
+  fs.writeFileSync(OUT_CSS,    cssOutput, 'utf8');
+  fs.writeFileSync(OUT_TS_GEN, tsOutput,  'utf8');
+  fs.writeFileSync(OUT_TW_GEN, twOutput,  'utf8');
+
+  console.log(`\n✅ variables.css   → ${OUT_CSS}   (${Object.keys(lightTokens).length} light + ${Object.keys(darkTokens).length} dark tokens)`);
+  console.log(`✅ tokens.gen.ts   → ${OUT_TS_GEN}`);
+  console.log(`✅ tailwind.gen.js → ${OUT_TW_GEN}`);
+  console.log(`\n   Review .gen files before merging into src/tokens.ts and tailwind-tokens.js.`);
+}
+
+process.exit(exitCode);

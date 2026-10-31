@@ -1,0 +1,62 @@
+/* ── OTPInput ────────────────────────────────────────────────── */
+.wrapper { display: inline-flex; flex-direction: column; gap: 8px; }
+
+.cells {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cell {
+  width: 48px;
+  height: 56px;
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-md, 12px);
+  background: var(--color-surface-default);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-numeric);
+  font-size: var(--font-size-num-large, 24px);
+  font-weight: var(--font-weight-semibold, 600);
+  text-align: center;
+  caret-color: var(--color-border-focus);
+  transition: border-color 150ms;
+  outline: none;
+}
+.cell:focus {
+  border: 2px solid var(--color-border-focus);
+}
+.cell[data-filled="true"] {
+  border-color: var(--color-border-strong);
+}
+.cell:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--color-surface-raised);
+}
+
+/* State: error */
+.wrapper[data-state="error"] .cell {
+  border-color: var(--color-border-error, #FF3D71);
+}
+.wrapper[data-state="error"] .cell:focus {
+  border-color: var(--color-border-error, #FF3D71);
+}
+
+/* State: success */
+.wrapper[data-state="success"] .cell {
+  border-color: var(--color-status-success-default, #00D68F);
+  background: var(--color-status-success-subtle);
+}
+
+/* Helper text */
+.helper {
+  font-size: var(--font-size-caption, 12px);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+.wrapper[data-state="error"] .helper {
+  color: var(--color-status-error-default, #FF3D71);
+}
+.wrapper[data-state="success"] .helper {
+  color: var(--color-status-success-default, #00D68F);
+}

@@ -1,0 +1,58 @@
+/* ── SearchBar ───────────────────────────────────────────────── */
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1.5px solid var(--color-border-default);
+  background: var(--color-surface-default);
+  padding: 0 12px;
+  gap: 8px;
+  transition: border-color 150ms;
+  min-width: 200px;
+}
+.wrapper:focus-within {
+  border-color: var(--color-border-focus);
+  border-width: 2px;
+}
+.wrapper.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  color: var(--color-icon-secondary);
+}
+
+.input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-b2, 14px);
+  outline: none;
+  min-width: 0;
+}
+.input::placeholder { color: var(--color-text-disabled); }
+/* Remove the native clear button from type="search" */
+.input::-webkit-search-cancel-button { display: none; }
+
+.clearBtn {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: opacity 150ms;
+}
+.clearBtn:hover { opacity: 0.7; }
+.clearBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
