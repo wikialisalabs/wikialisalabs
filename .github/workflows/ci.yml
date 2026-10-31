@@ -79,19 +79,21 @@ jobs:
 
       - name: Check no broken internal links in index.md
         run: |
-          failed=0
-          # Extract all ./path links from index.md
-          grep -oP '\(\.\/[^)]+\)' index.md | tr -d '()' | while read -r link; do
+          missing=0
+          while IFS= read -r link; do
             path="${link#./}"
-            # Skip directory links (ending with /)
-            if [[ "$path" == */ ]]; then continue; fi
-            if [ ! -f "/root/workspace/$path" ] && [ ! -f "$path" ]; then
-              if [ ! -f "$GITHUB_WORKSPACE/$path" ]; then
-                echo "⚠️  Link target not found: $link"
-              fi
+            [[ "$path" == */ ]] && continue          # skip dir-only links
+            [[ "$path" == http* ]] && continue       # skip external URLs
+            if [ ! -f "$GITHUB_WORKSPACE/$path" ]; then
+              echo "⚠️  Link target not found: $path"
+              missing=$((missing+1))
             fi
-          done
-          echo "✅ Link check complete"
+          done < <(grep -oP '\(\.\/[^)]+\)' index.md | tr -d '()')
+          if [ "$missing" -gt 0 ]; then
+            echo "$missing broken link(s) found"
+            exit 1
+          fi
+          echo "✅ All internal links resolve"
 
       - name: Summary
         run: |
