@@ -1,0 +1,8 @@
+---
+// The changelog lives on the website now. The page stays so that the menu link,
+// old bookmarks and the copy in the downloadable package all keep working.
+import RedirectLayout from '@shared/layouts/RedirectLayout.astro'
+import site from '@shared/data/site.json'
+---
+
+<RedirectLayout url={site.changelogUrl} />

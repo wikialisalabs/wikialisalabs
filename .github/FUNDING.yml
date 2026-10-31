@@ -1,0 +1,16 @@
+# Cấu hình nút "Sponsor" trên GitHub repository
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# ── GitHub Sponsors ──────────────────────────────────────────────────────────
+github:
+  - wikialisalabs          # Username/org GitHub của dự án AXQ
+
+# ── Open Collective ──────────────────────────────────────────────────────────
+open_collective: wikialisalabs
+
+# ── URL tuỳ chỉnh (tối đa 4) ─────────────────────────────────────────────────
+# Polar.sh: bounty cho từng issue cụ thể + subscription
+# Gitcoin: Web3/crypto grant rounds
+custom:
+  - https://polar.sh/wikialisalabs
+  - https://grants.gitcoin.co
