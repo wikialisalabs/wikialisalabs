@@ -2272,4 +2272,3123 @@ fn main() -> eyre::Result<()> {
 
 ---
 
-*Wikialisalabs Foundation · RUST_EVM_PLAN v1.1 · 2026-10-31 · root@wikialisalabs.axvn.vn*
+## 20. Giai đoạn 2 Chi tiết: Thiết kế API & Triển khai `evm`
+
+> **Mục tiêu:** EVM interpreter đầy đủ Cancun, modular, pass ≥ 95% `ethereum/tests`, Inspector hook API sẵn sàng cho Foundry/Debugger.
+
+---
+
+### 20.1 Cấu trúc Workspace `evm`
+
+```
+wikialisalabs-evm/crates/
+├── revm-primitives/          ← Env, TxEnv, BlockEnv, ResultAndState
+├── revm-interpreter/         ← Stack, Memory, Bytecode, opcode dispatch
+├── revm-precompiles/         ← SHA256, ECRECOVER, BN128, KZG, BLAKE2
+├── revm-context/             ← EVMContext<DB> — gom DB + Env + Journal
+├── revm-context-interface/   ← Trait ContextTr, DatabaseGetter (no impl)
+├── revm-inspector/           ← Inspector trait + NoOpInspector, TracerEip3155
+├── revm-handler/             ← ExecutionHandler — glue tất cả lại
+├── revm-database/            ← Database trait + InMemoryDB, EmptyDB
+├── revm-database-interface/  ← Trait Database, DatabaseRef (no impl)
+└── revm/                     ← Meta-crate: re-export + builder API
+```
+
+**Nguyên tắc tách crate:**
+- `*-interface` crates chỉ chứa traits, không có logic — cho phép downstream impl mà không kéo dep nặng
+- `revm-interpreter` **không** phụ thuộc async, không phụ thuộc `revm-context` — chạy được standalone
+- `revm-precompiles` có thể swap toàn bộ bằng custom impl (cần cho ZK-EVM)
+
+---
+
+### 20.2 `Cargo.toml` — crate `revm`
+
+```toml
+# crates/revm/Cargo.toml
+[package]
+name         = "revm"
+version      = "0.1.0"
+edition      = "2021"
+rust-version = "1.76"
+description  = "Ethereum Virtual Machine — modular, no_std-compatible"
+license      = "MIT OR Apache-2.0"
+repository   = "https://github.com/wikialisalabs/evm"
+keywords     = ["ethereum", "evm", "revm", "blockchain"]
+categories   = ["cryptography::cryptocurrencies"]
+
+[dependencies]
+revm-interpreter         = { path = "../revm-interpreter",         version = "0.1" }
+revm-precompiles         = { path = "../revm-precompiles",         version = "0.1" }
+revm-context             = { path = "../revm-context",             version = "0.1" }
+revm-context-interface   = { path = "../revm-context-interface",   version = "0.1" }
+revm-handler             = { path = "../revm-handler",             version = "0.1" }
+revm-database            = { path = "../revm-database",            version = "0.1" }
+revm-database-interface  = { path = "../revm-database-interface",  version = "0.1" }
+alloy-primitives         = { workspace = true }
+alloy-eips               = { workspace = true }
+
+[features]
+default       = ["std"]
+std           = [
+    "revm-interpreter/std",
+    "revm-precompiles/std",
+    "revm-context/std",
+]
+serde         = ["revm-primitives/serde"]
+optional-gas-refund = []    # EIP-3529: giảm gas refund limit
+c-kzg         = ["revm-precompiles/c-kzg"]  # KZG precompile (EIP-4844)
+```
+
+---
+
+### 20.3 `revm-primitives` — Môi trường thực thi
+
+```rust
+// crates/revm-primitives/src/env.rs
+
+use alloy_primitives::{Address, B256, U256, Bytes};
+
+/// Toàn bộ thông tin cần thiết cho một lần thực thi EVM.
+/// Gom BlockEnv + TxEnv để truyền qua các lớp mà không clone riêng lẻ.
+#[derive(Clone, Debug, Default)]
+pub struct Env {
+    pub block: BlockEnv,
+    pub tx:    TxEnv,
+    pub cfg:   CfgEnv,
+}
+
+/// Thông tin block — bất biến trong suốt một block.
+#[derive(Clone, Debug)]
+pub struct BlockEnv {
+    /// Số block hiện tại
+    pub number:       U256,
+    /// Địa chỉ coinbase (fee recipient)
+    pub coinbase:     Address,
+    /// Unix timestamp của block
+    pub timestamp:    U256,
+    /// Gas limit của block
+    pub gas_limit:    U256,
+    /// Base fee (EIP-1559) — None nếu pre-London
+    pub basefee:      U256,
+    /// Difficulty (pre-Merge) hoặc prevrandao (post-Merge)
+    pub difficulty:   U256,
+    /// PREVRANDAO (EIP-4399) — Some sau Paris hardfork
+    pub prevrandao:   Option<B256>,
+    /// Blob base fee (EIP-4844) — None nếu pre-Cancun
+    pub blob_excess_gas_and_price: Option<BlobExcessGasAndPrice>,
+}
+
+/// Thông tin transaction.
+#[derive(Clone, Debug, Default)]
+pub struct TxEnv {
+    /// Người gửi
+    pub caller:           Address,
+    /// Gas limit của tx
+    pub gas_limit:        u64,
+    /// Gas price (legacy) hoặc max_fee_per_gas (EIP-1559)
+    pub gas_price:        U256,
+    /// Đích: Call(address) hoặc Create
+    pub transact_to:      TxKind,
+    /// ETH value gửi kèm
+    pub value:            U256,
+    /// Calldata
+    pub data:             Bytes,
+    /// Nonce (None = skip nonce check)
+    pub nonce:            Option<u64>,
+    /// Chain ID (None = legacy pre-EIP-155)
+    pub chain_id:         Option<u64>,
+    /// Access list (EIP-2930)
+    pub access_list:      Vec<(Address, Vec<U256>)>,
+    /// Max priority fee (EIP-1559)
+    pub gas_priority_fee: Option<U256>,
+    /// Blob hashes (EIP-4844)
+    pub blob_hashes:      Vec<B256>,
+    /// Max fee per blob gas (EIP-4844)
+    pub max_fee_per_blob_gas: Option<U256>,
+}
+
+/// Loại giao dịch.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum TxKind {
+    #[default]
+    Create,
+    Call(Address),
+}
+
+/// Cấu hình EVM — hardfork và các flag toàn cục.
+#[derive(Clone, Debug)]
+pub struct CfgEnv {
+    /// Chain ID — kiểm tra EIP-155
+    pub chain_id:       u64,
+    /// Hardfork đang hoạt động
+    pub spec_id:        SpecId,
+    /// Bỏ qua nonce check (dùng trong static call / simulation)
+    pub disable_nonce_check: bool,
+    /// Bỏ qua balance check (dùng trong eth_call)
+    pub disable_balance_check: bool,
+    /// Giới hạn chiều sâu call stack (default: 1024)
+    pub limit_contract_code_size: Option<usize>,
+}
+
+/// Hardfork spec identifier.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
+pub enum SpecId {
+    FRONTIER        = 0,
+    HOMESTEAD       = 1,
+    TANGERINE       = 2,
+    SPURIOUS_DRAGON = 3,
+    BYZANTIUM       = 4,
+    CONSTANTINOPLE  = 5,
+    PETERSBURG      = 6,
+    ISTANBUL        = 7,
+    MUIR_GLACIER    = 8,
+    BERLIN          = 9,
+    LONDON          = 10,
+    ARROW_GLACIER   = 11,
+    GRAY_GLACIER    = 12,
+    MERGE           = 13,  // Paris
+    SHANGHAI        = 14,
+    CANCUN          = 15,
+    PRAGUE          = 16,
+    LATEST          = u8::MAX,
+}
+```
+
+---
+
+### 20.4 `Database` trait — Giao diện State
+
+```rust
+// crates/revm-database-interface/src/lib.rs
+
+use alloy_primitives::{Address, B256, U256};
+
+/// Thông tin account — nonce, balance, code hash.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct AccountInfo {
+    /// Số dư ETH
+    pub balance:   U256,
+    /// Nonce
+    pub nonce:     u64,
+    /// Keccak256 của bytecode (B256::ZERO nếu EOA)
+    pub code_hash: B256,
+    /// Bytecode (lazy-loaded, None nếu chưa cần)
+    pub code:      Option<Bytecode>,
+}
+
+/// Trait truy cập state — implement cho bất kỳ backend nào.
+///
+/// # Implementation Note
+/// - Các method nhận `&mut self` để hỗ trợ lazy loading từ database
+/// - Phải deterministic: cùng input → cùng output
+///
+/// # Examples
+/// ```rust
+/// use revm::{InMemoryDB, Database};
+///
+/// let mut db = InMemoryDB::default();
+/// let info = db.basic(Address::ZERO)?;
+/// ```
+pub trait Database {
+    /// Kiểu lỗi của backend (RocksDB error, network error…)
+    type Error: core::fmt::Debug;
+
+    /// Lấy thông tin account.
+    /// Trả về `Ok(None)` nếu account không tồn tại (EOA mới).
+    fn basic(&mut self, address: Address)
+        -> Result<Option<AccountInfo>, Self::Error>;
+
+    /// Lấy bytecode theo code hash.
+    /// Tách khỏi `basic()` vì phần lớn calls không cần bytecode.
+    fn code_by_hash(&mut self, code_hash: B256)
+        -> Result<Bytecode, Self::Error>;
+
+    /// Lấy giá trị storage slot.
+    fn storage(&mut self, address: Address, index: U256)
+        -> Result<U256, Self::Error>;
+
+    /// Lấy block hash theo block number.
+    /// EVM cần để hỗ trợ opcode BLOCKHASH.
+    fn block_hash(&mut self, number: u64)
+        -> Result<B256, Self::Error>;
+}
+
+/// Phiên bản read-only của Database (không cần &mut).
+/// Dùng khi cần share DB qua nhiều threads.
+pub trait DatabaseRef {
+    type Error: core::fmt::Debug;
+    fn basic_ref(&self, address: Address)
+        -> Result<Option<AccountInfo>, Self::Error>;
+    fn code_by_hash_ref(&self, code_hash: B256)
+        -> Result<Bytecode, Self::Error>;
+    fn storage_ref(&self, address: Address, index: U256)
+        -> Result<U256, Self::Error>;
+    fn block_hash_ref(&self, number: u64)
+        -> Result<B256, Self::Error>;
+}
+
+/// Adapter: DatabaseRef → Database (wrap bằng RefCell)
+pub struct DatabaseRefWrapper<T: DatabaseRef>(core::cell::RefCell<T>);
+```
+
+---
+
+### 20.5 `InMemoryDB` — Backend cho Testing
+
+```rust
+// crates/revm-database/src/in_memory.rs
+
+use alloy_primitives::{Address, B256, U256};
+use hashbrown::HashMap;
+use revm_database_interface::{AccountInfo, Database};
+
+/// Database in-memory — dùng cho unit tests, simulations, Foundry cheatcodes.
+///
+/// # Examples
+/// ```rust
+/// use revm::InMemoryDB;
+/// use alloy_primitives::{address, U256};
+///
+/// let mut db = InMemoryDB::default();
+///
+/// // Nạp ETH vào account
+/// db.insert_account_info(
+///     address!("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"),
+///     AccountInfo {
+///         balance: U256::from(10_u128.pow(18)), // 1 ETH
+///         nonce:   0,
+///         ..Default::default()
+///     },
+/// );
+///
+/// // Set storage slot
+/// db.insert_account_storage(
+///     address!("0xContract..."),
+///     U256::from(0u64),   // slot 0
+///     U256::from(42u64),  // value
+/// )?;
+/// ```
+#[derive(Clone, Debug, Default)]
+pub struct InMemoryDB {
+    accounts: HashMap<Address, DbAccount>,
+    block_hashes: HashMap<u64, B256>,
+    contracts: HashMap<B256, Bytecode>,
+}
+
+#[derive(Clone, Debug, Default)]
+struct DbAccount {
+    info:    AccountInfo,
+    storage: HashMap<U256, U256>,
+    /// Trạng thái: Normal | SelfDestructed | LoadedAsEmpty
+    status:  AccountStatus,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+enum AccountStatus {
+    #[default] Normal,
+    SelfDestructed,
+    LoadedAsEmpty,
+}
+
+impl InMemoryDB {
+    /// Thêm/ghi đè thông tin account.
+    pub fn insert_account_info(&mut self, address: Address, info: AccountInfo) {
+        self.accounts.entry(address).or_default().info = info;
+    }
+
+    /// Thêm/ghi đè storage slot.
+    pub fn insert_account_storage(
+        &mut self,
+        address: Address,
+        slot: U256,
+        value: U256,
+    ) -> Result<(), core::convert::Infallible> {
+        self.accounts.entry(address).or_default().storage.insert(slot, value);
+        Ok(())
+    }
+
+    /// Lấy tất cả storage của một account (dùng để compute storageRoot).
+    pub fn storage_iter(&self, address: &Address)
+        -> impl Iterator<Item = (&U256, &U256)>
+    {
+        self.accounts.get(address)
+            .map(|a| a.storage.iter())
+            .into_iter()
+            .flatten()
+    }
+}
+
+impl Database for InMemoryDB {
+    type Error = core::convert::Infallible;
+
+    fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
+        Ok(self.accounts.get(&address).map(|a| a.info.clone()))
+    }
+
+    fn code_by_hash(&mut self, code_hash: B256) -> Result<Bytecode, Self::Error> {
+        Ok(self.contracts.get(&code_hash).cloned().unwrap_or_default())
+    }
+
+    fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
+        Ok(self.accounts.get(&address)
+            .and_then(|a| a.storage.get(&index))
+            .copied()
+            .unwrap_or(U256::ZERO))
+    }
+
+    fn block_hash(&mut self, number: u64) -> Result<B256, Self::Error> {
+        // Nếu không có trong cache: tính keccak256(block_number.to_be_bytes())
+        Ok(self.block_hashes.get(&number).copied().unwrap_or_else(|| {
+            alloy_primitives::keccak256(number.to_be_bytes())
+        }))
+    }
+}
+```
+
+---
+
+### 20.6 `Inspector` trait — Hook cho Tracer & Debugger
+
+```rust
+// crates/revm-inspector/src/lib.rs
+
+use alloy_primitives::{Address, B256, U256, Log};
+use revm_interpreter::{Interpreter, CallOutcome, CreateOutcome};
+use revm_context_interface::ContextTr;
+
+/// Inspector cho phép quan sát từng bước thực thi EVM.
+///
+/// Implement trait này để xây dựng:
+/// - **Tracer** (ghi lại mọi opcode)
+/// - **Debugger** (breakpoint, watch variables)
+/// - **Gas profiler** (phân tích gas hog)
+/// - **Coverage tool** (line coverage cho Solidity)
+/// - **Fuzzing feedback** (guided fuzzing)
+///
+/// # Performance
+/// `NoOpInspector` (default impl) được tối ưu bằng monomorphization —
+/// khi dùng `NoOpInspector`, compiler inlines tất cả → zero overhead.
+pub trait Inspector<CTX: ContextTr> {
+    /// Gọi trước khi interpreter bắt đầu thực thi một call frame.
+    #[inline]
+    fn initialize_interp(&mut self, _interp: &mut Interpreter, _ctx: &mut CTX) {}
+
+    /// Gọi trước mỗi opcode.
+    ///
+    /// Trả về `InstructionResult::Continue` để tiếp tục,
+    /// hoặc kết quả khác để dừng/skip opcode.
+    #[inline]
+    fn step(&mut self, _interp: &mut Interpreter, _ctx: &mut CTX) {}
+
+    /// Gọi sau mỗi opcode (sau khi đã thực thi).
+    #[inline]
+    fn step_end(&mut self, _interp: &mut Interpreter, _ctx: &mut CTX) {}
+
+    /// Gọi khi có LOG0..LOG4.
+    #[inline]
+    fn log(&mut self, _interp: &mut Interpreter, _ctx: &mut CTX, _log: &Log) {}
+
+    /// Gọi trước khi thực hiện CALL/CALLCODE/DELEGATECALL/STATICCALL.
+    /// Trả về `None` để tiếp tục bình thường, `Some(outcome)` để override kết quả.
+    #[inline]
+    fn call(&mut self, _ctx: &mut CTX, _inputs: &mut CallInputs) -> Option<CallOutcome> {
+        None
+    }
+
+    /// Gọi sau khi CALL kết thúc.
+    #[inline]
+    fn call_end(&mut self, _ctx: &mut CTX, _inputs: &CallInputs, _outcome: &mut CallOutcome) {}
+
+    /// Gọi trước CREATE/CREATE2.
+    #[inline]
+    fn create(&mut self, _ctx: &mut CTX, _inputs: &mut CreateInputs) -> Option<CreateOutcome> {
+        None
+    }
+
+    /// Gọi sau CREATE kết thúc.
+    #[inline]
+    fn create_end(&mut self, _ctx: &mut CTX, _inputs: &CreateInputs, _outcome: &mut CreateOutcome) {}
+
+    /// Gọi khi SELFDESTRUCT.
+    #[inline]
+    fn selfdestruct(&mut self, _contract: Address, _target: Address, _value: U256) {}
+}
+
+/// Inspector không làm gì — zero overhead khi không cần debug.
+pub struct NoOpInspector;
+impl<CTX: ContextTr> Inspector<CTX> for NoOpInspector {}
+
+/// EIP-3155 standard tracer — xuất JSON trace tương thích geth.
+pub struct TracerEip3155 {
+    output:     Vec<u8>,    // Buffer output (tránh alloc mỗi dòng)
+    gas_limit:  u64,
+    print_summary: bool,
+}
+
+impl TracerEip3155 {
+    pub fn new(gas_limit: u64) -> Self {
+        Self { output: Vec::new(), gas_limit, print_summary: true }
+    }
+
+    /// Xuất toàn bộ trace dưới dạng NDJSON (một JSON object mỗi dòng).
+    pub fn into_output(self) -> Vec<u8> { self.output }
+}
+```
+
+---
+
+### 20.7 Gas Schedule — EIP-driven Constants
+
+```rust
+// crates/revm-interpreter/src/gas/constants.rs
+
+//! Gas cost constants theo Ethereum Yellow Paper và các EIPs.
+//! Mỗi hằng số có comment trỏ tới EIP/spec nguồn gốc.
+
+// --- Bộ nhớ ---
+pub const MEMORY_GAS_PER_WORD: u64 = 3;       // Yellow Paper §9.1
+
+// --- Stack operations ---
+pub const GAS_VERY_LOW:  u64 = 3;             // ADD, SUB, NOT, LT...
+pub const GAS_LOW:       u64 = 5;             // MUL, DIV, SDIV...
+pub const GAS_MID:       u64 = 8;             // ADDMOD, MULMOD, JUMP
+pub const GAS_HIGH:      u64 = 10;            // JUMPI
+pub const GAS_EXP_BYTE:  u64 = 50;            // EIP-160: EXP per byte in exponent
+
+// --- Storage ---
+pub const SLOAD_COLD:         u64 = 2100;     // EIP-2929
+pub const SLOAD_WARM:         u64 = 100;      // EIP-2929
+pub const SSTORE_SET:         u64 = 20000;    // Yellow Paper
+pub const SSTORE_RESET:       u64 = 2900;     // EIP-2929 adjusted
+pub const SSTORE_CLEARS_SCHEDULE: u64 = 4800; // EIP-3529 refund cap
+pub const SSTORE_INIT_REFUND:     u64 = 19900;// EIP-3529
+
+// --- Account access (EIP-2929) ---
+pub const COLD_ACCOUNT_ACCESS: u64 = 2600;    // EIP-2929
+pub const WARM_ACCOUNT_ACCESS: u64 = 100;     // EIP-2929
+
+// --- Call opcodes ---
+pub const CALL_STIPEND:  u64 = 2300;          // ETH transfer minimum
+pub const CALL_NEW_ACCOUNT: u64 = 25000;      // Tạo account mới trong CALL
+
+// --- Precompiles ---
+pub const ECRECOVER_GAS:   u64 = 3000;
+pub const SHA256_BASE:     u64 = 60;
+pub const SHA256_PER_WORD: u64 = 12;
+pub const RIPEMD160_BASE:  u64 = 600;
+pub const IDENTITY_BASE:   u64 = 15;
+pub const IDENTITY_WORD:   u64 = 3;
+
+// --- EIP-4844 Blob ---
+pub const POINT_EVALUATION_PRECOMPILE_GAS: u64 = 50000; // EIP-4844
+
+// --- Transient storage (EIP-1153) ---
+pub const TLOAD_GAS:  u64 = 100;              // EIP-1153 — warm SLOAD equivalent
+pub const TSTORE_GAS: u64 = 100;              // EIP-1153 — warm SSTORE equivalent
+
+/// Tính gas cho memory expansion.
+///
+/// Formula: `memory_gas = words * 3 + words^2 / 512`
+/// Chi phí tăng quadratically để ngăn memory bomb attacks.
+#[inline]
+pub fn memory_gas(word_count: u64) -> u64 {
+    let words = word_count;
+    words.saturating_mul(MEMORY_GAS_PER_WORD)
+        .saturating_add(words.saturating_mul(words) / 512)
+}
+
+/// Tính gas cho EXP opcode.
+///
+/// EIP-160: 10 + 50 * byte_length_of_exponent
+#[inline]
+pub fn exp_gas(exponent: &alloy_primitives::U256) -> u64 {
+    if exponent.is_zero() { return 10; }
+    let byte_len = (exponent.bit_len() as u64 + 7) / 8;
+    10_u64.saturating_add(GAS_EXP_BYTE.saturating_mul(byte_len))
+}
+```
+
+---
+
+### 20.8 Opcode Dispatch — Bảng nhảy hiệu năng cao
+
+```rust
+// crates/revm-interpreter/src/instructions/table.rs
+
+//! Jump table cho opcode dispatch — nhanh hơn match arm vì branch predictor
+//! có thể cache bảng địa chỉ hàm (indirect call prediction).
+
+use crate::{Interpreter, InstructionResult};
+use revm_context_interface::ContextTr;
+
+/// Kiểu con trỏ hàm thực thi một opcode.
+pub type Instruction<CTX> = fn(&mut Interpreter, &mut CTX);
+
+/// Bảng 256 instruction pointers — một entry cho mỗi opcode (0x00..=0xFF).
+pub struct InstructionTable<CTX>([Instruction<CTX>; 256]);
+
+impl<CTX: ContextTr> InstructionTable<CTX> {
+    /// Xây dựng bảng cho một SpecId cụ thể.
+    /// Các opcode không hợp lệ ở spec đó trỏ tới `instruction_not_found`.
+    pub fn new(spec_id: SpecId) -> Self {
+        let mut table = [instruction_not_found as Instruction<CTX>; 256];
+
+        // --- Stop & Arithmetic (0x00..=0x0B) ---
+        table[0x00] = instruction::stop;
+        table[0x01] = instruction::add;
+        table[0x02] = instruction::mul;
+        table[0x03] = instruction::sub;
+        table[0x04] = instruction::div;
+        table[0x05] = instruction::sdiv;
+        table[0x06] = instruction::modulo;
+        table[0x07] = instruction::smod;
+        table[0x08] = instruction::addmod;
+        table[0x09] = instruction::mulmod;
+        table[0x0A] = instruction::exp;
+        table[0x0B] = instruction::signextend;
+
+        // --- Comparison & Bitwise (0x10..=0x1D) ---
+        table[0x10] = instruction::lt;
+        table[0x11] = instruction::gt;
+        // ... (tất cả 188 opcodes)
+
+        // --- EIP-1153: Transient Storage (chỉ từ Cancun) ---
+        if spec_id >= SpecId::CANCUN {
+            table[0x5C] = instruction::tload;
+            table[0x5D] = instruction::tstore;
+        }
+
+        // --- EIP-4844: BLOBHASH (chỉ từ Cancun) ---
+        if spec_id >= SpecId::CANCUN {
+            table[0x49] = instruction::blobhash;
+        }
+
+        Self(table)
+    }
+
+    /// Thực thi opcode.
+    #[inline(always)]
+    pub fn execute(&self, opcode: u8, interp: &mut Interpreter, ctx: &mut CTX) {
+        (self.0[opcode as usize])(interp, ctx);
+    }
+}
+
+/// Opcode không hợp lệ — trả về INVALID kết quả.
+fn instruction_not_found<CTX>(interp: &mut Interpreter, _ctx: &mut CTX) {
+    interp.instruction_result = InstructionResult::InvalidFEOpcode;
+}
+```
+
+---
+
+### 20.9 Builder API — `Evm::builder()`
+
+```rust
+// crates/revm/src/builder.rs
+
+use revm_context::EvmContext;
+use revm_database_interface::Database;
+use revm_inspector::{Inspector, NoOpInspector};
+
+/// Builder pattern để tạo EVM instance.
+///
+/// # Examples
+///
+/// **Execution cơ bản (không inspector):**
+/// ```rust
+/// use revm::{Evm, InMemoryDB};
+/// use revm_primitives::{TxKind, U256, address};
+///
+/// let mut db = InMemoryDB::default();
+/// let result = Evm::builder()
+///     .with_db(&mut db)
+///     .modify_block_env(|b| { b.number = U256::from(20_000_000u64); })
+///     .modify_tx_env(|tx| {
+///         tx.caller      = address!("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+///         tx.transact_to = TxKind::Call(address!("0xRecipient..."));
+///         tx.value       = U256::from(1_000u64);
+///         tx.gas_limit   = 21_000;
+///     })
+///     .build()
+///     .transact_commit()?;
+///
+/// assert!(result.is_success());
+/// ```
+///
+/// **Với Inspector (EIP-3155 tracer):**
+/// ```rust
+/// use revm::{Evm, InMemoryDB};
+/// use revm_inspector::TracerEip3155;
+///
+/// let mut db = InMemoryDB::default();
+/// let mut tracer = TracerEip3155::new(1_000_000);
+///
+/// let result = Evm::builder()
+///     .with_db(&mut db)
+///     .with_inspector(&mut tracer)
+///     .modify_tx_env(|tx| { /* ... */ })
+///     .build()
+///     .transact()?;
+///
+/// let trace_json = tracer.into_output();
+/// ```
+pub struct EvmBuilder<DB, INSP = NoOpInspector> {
+    db:       DB,
+    env:      Box<Env>,
+    inspector: INSP,
+    spec_id:  SpecId,
+}
+
+impl<DB: Database> EvmBuilder<DB, NoOpInspector> {
+    pub fn new(db: DB) -> Self {
+        Self {
+            db,
+            env:      Box::default(),
+            inspector: NoOpInspector,
+            spec_id:  SpecId::CANCUN,
+        }
+    }
+}
+
+impl<DB: Database, INSP: Inspector<EvmContext<DB>>> EvmBuilder<DB, INSP> {
+    /// Đặt inspector (thay đổi generic type).
+    pub fn with_inspector<I: Inspector<EvmContext<DB>>>(
+        self,
+        inspector: I,
+    ) -> EvmBuilder<DB, I> {
+        EvmBuilder { db: self.db, env: self.env, inspector, spec_id: self.spec_id }
+    }
+
+    pub fn modify_block_env(mut self, f: impl FnOnce(&mut BlockEnv)) -> Self {
+        f(&mut self.env.block); self
+    }
+
+    pub fn modify_tx_env(mut self, f: impl FnOnce(&mut TxEnv)) -> Self {
+        f(&mut self.env.tx); self
+    }
+
+    pub fn with_spec_id(mut self, spec_id: SpecId) -> Self {
+        self.spec_id = spec_id; self
+    }
+
+    /// Build thành `Evm` ready-to-use.
+    pub fn build(self) -> Evm<DB, INSP> {
+        Evm::new(self.db, *self.env, self.inspector, self.spec_id)
+    }
+}
+
+/// EVM instance — main execution engine.
+pub struct Evm<DB: Database, INSP = NoOpInspector> {
+    context:   EvmContext<DB>,
+    inspector: INSP,
+}
+
+impl<DB: Database, INSP: Inspector<EvmContext<DB>>> Evm<DB, INSP> {
+    /// Thực thi transaction, trả về ResultAndState (không commit state).
+    pub fn transact(&mut self) -> Result<ResultAndState, EVMError<DB::Error>> {
+        // 1. Validate tx (nonce, balance, gas)
+        // 2. Deduct upfront cost
+        // 3. Execute bytecode với Inspector hooks
+        // 4. Refund gas
+        // 5. Pay coinbase
+        todo!()
+    }
+
+    /// Thực thi và commit state changes vào DB.
+    pub fn transact_commit(&mut self) -> Result<ExecutionResult, EVMError<DB::Error>> {
+        let ResultAndState { result, state } = self.transact()?;
+        self.context.db.commit(state);
+        Ok(result)
+    }
+}
+
+/// Kết quả và state changes sau khi execute.
+pub struct ResultAndState {
+    pub result: ExecutionResult,
+    pub state:  State, // HashMap<Address, Account>
+}
+
+/// Kết quả execution.
+#[derive(Debug)]
+pub enum ExecutionResult {
+    Success {
+        reason:      SuccessReason,
+        gas_used:    u64,
+        gas_refunded: u64,
+        logs:        Vec<Log>,
+        output:      Output,
+    },
+    Revert {
+        gas_used: u64,
+        output:   Bytes,
+    },
+    Halt {
+        reason:   HaltReason,
+        gas_used: u64,
+    },
+}
+
+impl ExecutionResult {
+    pub fn is_success(&self) -> bool { matches!(self, Self::Success { .. }) }
+    pub fn gas_used(&self) -> u64 {
+        match self {
+            Self::Success { gas_used, .. } => *gas_used,
+            Self::Revert  { gas_used, .. } => *gas_used,
+            Self::Halt    { gas_used, .. } => *gas_used,
+        }
+    }
+}
+```
+
+---
+
+### 20.10 Fuzz Targets cho `evm`
+
+```rust
+// fuzz/fuzz_targets/fuzz_evm_bytecode.rs
+//! Fuzz EVM với bytecode ngẫu nhiên — tìm panic, infinite loop, OOB access.
+
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+use revm::{Evm, InMemoryDB};
+use revm_primitives::{TxEnv, TxKind, U256, address, Bytes};
+
+fuzz_target!(|data: &[u8]| {
+    // Treat `data` như là bytecode của một contract
+    let contract_addr = address!("0x1111111111111111111111111111111111111111");
+    let caller        = address!("0x2222222222222222222222222222222222222222");
+
+    let mut db = InMemoryDB::default();
+    // Deploy bytecode ngẫu nhiên
+    db.insert_account_info(contract_addr, revm_database_interface::AccountInfo {
+        balance:   U256::ZERO,
+        nonce:     0,
+        code_hash: alloy_primitives::keccak256(data),
+        code:      Some(Bytecode::new_raw(Bytes::copy_from_slice(data))),
+    });
+    db.insert_account_info(caller, revm_database_interface::AccountInfo {
+        balance: U256::MAX, // Đủ ETH cho mọi thứ
+        ..Default::default()
+    });
+
+    // Chạy với gas limit nhỏ để tránh timeout
+    let _ = Evm::builder()
+        .with_db(&mut db)
+        .with_spec_id(SpecId::CANCUN)
+        .modify_tx_env(|tx| {
+            tx.caller      = caller;
+            tx.transact_to = TxKind::Call(contract_addr);
+            tx.gas_limit   = 100_000;  // Giới hạn để fuzz nhanh
+            tx.data        = Bytes::new();
+        })
+        .build()
+        .transact(); // Không panic = pass
+
+    // Không assert kết quả — chỉ cần không crash
+});
+```
+
+```rust
+// fuzz/fuzz_targets/fuzz_evm_calldata.rs
+//! Fuzz calldata gửi đến một contract cố định (ERC-20).
+
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+use revm::{Evm, InMemoryDB};
+use alloy_primitives::Bytes;
+
+// Bytecode ERC-20 chuẩn (pre-compiled artifact)
+const ERC20_BYTECODE: &[u8] = include_bytes!("../artifacts/erc20.bin");
+
+fuzz_target!(|calldata: &[u8]| {
+    let mut db = setup_erc20_db(ERC20_BYTECODE);
+    let _ = Evm::builder()
+        .with_db(&mut db)
+        .modify_tx_env(|tx| {
+            tx.transact_to = TxKind::Call(ERC20_ADDR);
+            tx.data        = Bytes::copy_from_slice(calldata);
+            tx.gas_limit   = 500_000;
+        })
+        .build()
+        .transact();
+});
+```
+
+---
+
+### 20.11 CI Workflow — `bench.yml` (Benchmark Regression Guard)
+
+```yaml
+# .github/workflows/bench.yml
+name: Benchmark Regression
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write      # Để bencher.dev push badge vào repo
+
+jobs:
+  bench:
+    name: Criterion benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with: { shared-key: "bench" }
+
+      # Cài sccache để tránh recompile
+      - name: Install sccache
+        run: cargo install sccache --locked
+
+      - name: Run benchmarks
+        run: |
+          cargo bench --all-features --workspace 2>&1 | tee bench_output.txt
+
+      # Upload kết quả lên bencher.dev để tracking theo commit
+      - uses: bencherdev/bencher@main
+        with:
+          project: wikialisalabs-evm
+          token:   ${{ secrets.BENCHER_API_TOKEN }}
+          testbed: ubuntu-latest
+          adapter:  rust_criterion
+          file:    bench_output.txt
+
+      # Fail PR nếu regression > 10%
+      - name: Check regressions
+        run: |
+          python3 scripts/check_bench_regression.py bench_output.txt 10.0
+```
+
+```yaml
+# .github/workflows/ethereum-tests.yml
+name: ethereum/tests compatibility
+
+on:
+  push:
+    paths: ["crates/revm**/**"]
+  schedule:
+    - cron: "0 2 * * 1"  # Thứ 2 hàng tuần
+
+jobs:
+  ethereum-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout ethereum/tests
+        uses: actions/checkout@v4
+        with:
+          repository: ethereum/tests
+          path: ethereum-tests
+          sparse-checkout: |
+            GeneralStateTests
+            BlockchainTests
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build test runner
+        run: cargo build --release -p revm-test
+
+      - name: Run GeneralStateTests
+        run: |
+          ./target/release/revm-test \
+            --path ethereum-tests/GeneralStateTests \
+            --spec Cancun \
+            --report tests_report.json
+
+      - name: Assert pass rate ≥ 95%
+        run: |
+          PASS_RATE=$(jq '.pass_rate' tests_report.json)
+          echo "Pass rate: $PASS_RATE%"
+          python3 -c "import sys; sys.exit(0 if float('$PASS_RATE') >= 95.0 else 1)"
+```
+
+---
+
+## 21. Giai đoạn 2 Chi tiết: `svm-rs` — Download Engine & CLI
+
+> **Mục tiêu:** Trình quản lý phiên bản `solc` viết bằng Rust thuần — an toàn, cross-platform, dùng được cả như CLI lẫn thư viện trong `build.rs`.
+
+---
+
+### 21.1 Cấu trúc Workspace `svm-rs`
+
+```
+wikialisalabs-evm/crates/
+├── svm-rs/               ← Core library
+│   ├── Cargo.toml
+│   └── src/
+│       ├── lib.rs
+│       ├── manager.rs    ← SvmManager — entry point
+│       ├── version.rs    ← Version newtype (semver wrapper)
+│       ├── platform.rs   ← Platform detection (OS + arch)
+│       ├── releases.rs   ← Fetch + parse list.json từ binaries.soliditylang.org
+│       ├── install.rs    ← Download + verify + install pipeline
+│       ├── verify.rs     ← SHA-256 checksum verification
+│       ├── error.rs      ← SvmError enum
+│       └── paths.rs      ← ~/.svm/ directory layout
+│
+├── svm-rs-builds/        ← build.rs helper
+│   ├── Cargo.toml
+│   └── src/
+│       └── lib.rs        ← SolcVersion::new().require("0.8.26").get_path()
+│
+└── svm-rs-cli/           ← Binary
+    ├── Cargo.toml
+    └── src/
+        └── main.rs       ← clap CLI
+```
+
+---
+
+### 21.2 `Cargo.toml` — `svm-rs` core
+
+```toml
+# crates/svm-rs/Cargo.toml
+[package]
+name         = "svm-rs"
+version      = "1.0.0"
+edition      = "2021"
+rust-version = "1.76"
+description  = "Solidity compiler version manager"
+license      = "MIT OR Apache-2.0"
+repository   = "https://github.com/wikialisalabs/svm-rs"
+keywords     = ["solidity", "solc", "compiler", "version-manager", "ethereum"]
+
+[dependencies]
+# HTTP client (async)
+reqwest     = { version = "0.12", features = ["json", "stream"], default-features = false }
+tokio       = { workspace = true, features = ["rt-multi-thread", "macros", "fs", "io-util"] }
+
+# SHA-256 verify
+sha2        = { workspace = true }
+hex         = { workspace = true }
+
+# Semver parsing
+semver      = { version = "1.0", features = ["serde"] }
+
+# JSON parsing (list.json)
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+
+# Error handling
+thiserror   = { workspace = true }
+
+# Filesystem + paths
+dirs        = { version = "5" }        # ~/.svm/ platform-agnostic
+
+# Compression (.tar.gz trên Linux)
+flate2      = { version = "1",  optional = true }
+tar         = { version = "0.4", optional = true }
+
+# Progress bar (CLI only)
+indicatif   = { version = "0.17", optional = true }
+
+[features]
+default   = ["rustls-tls"]
+rustls-tls = ["reqwest/rustls-tls"]    # TLS thuần Rust, không cần OpenSSL
+native-tls = ["reqwest/native-tls"]    # Fallback nếu cần platform TLS
+archive   = ["dep:flate2", "dep:tar"]  # Giải nén .tar.gz (Linux binary)
+progress  = ["dep:indicatif"]          # Progress bar cho CLI
+```
+
+---
+
+### 21.3 `platform.rs` — Phát hiện nền tảng
+
+```rust
+// crates/svm-rs/src/platform.rs
+
+/// Nền tảng mục tiêu — map tới đường dẫn download trên binaries.soliditylang.org.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Platform {
+    LinuxAmd64,
+    LinuxAarch64,
+    MacOsAmd64,
+    MacOsAarch64,   // Rosetta 2 fallback → MacOsAmd64
+    WindowsAmd64,
+}
+
+impl Platform {
+    /// Phát hiện platform hiện tại tại compile time.
+    pub const fn current() -> Self {
+        #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+        return Platform::LinuxAmd64;
+        #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+        return Platform::LinuxAarch64;
+        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+        return Platform::MacOsAmd64;
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        return Platform::MacOsAarch64;
+        #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+        return Platform::WindowsAmd64;
+        // Fallback cho CI unknown platforms
+        #[allow(unreachable_code)]
+        Platform::LinuxAmd64
+    }
+
+    /// Tiền tố URL trong binaries.soliditylang.org.
+    pub const fn url_prefix(self) -> &'static str {
+        match self {
+            Platform::LinuxAmd64   => "linux-amd64",
+            Platform::LinuxAarch64 => "linux-aarch64",
+            // macOS aarch64 dùng amd64 binary qua Rosetta 2
+            Platform::MacOsAmd64 | Platform::MacOsAarch64 => "macosx-amd64",
+            Platform::WindowsAmd64 => "windows-amd64",
+        }
+    }
+
+    /// Extension file binary.
+    pub const fn binary_extension(self) -> &'static str {
+        match self {
+            Platform::WindowsAmd64 => ".exe",
+            _ => "",
+        }
+    }
+}
+```
+
+---
+
+### 21.4 `releases.rs` — Fetch List.json
+
+```rust
+// crates/svm-rs/src/releases.rs
+
+use semver::Version;
+use serde::{Deserialize, Serialize};
+use crate::Platform;
+
+const LIST_JSON_BASE: &str = "https://binaries.soliditylang.org";
+
+/// Một bản release solc.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Release {
+    /// Tên file binary (e.g. "solc-linux-amd64-v0.8.26+commit.8a97fa7a")
+    pub path:    String,
+    /// SHA-256 checksum của binary
+    pub sha256:  String,
+    /// URL download đầy đủ
+    #[serde(skip)]
+    pub url:     String,
+}
+
+/// Toàn bộ list.json từ binaries.soliditylang.org.
+#[derive(Debug, Deserialize)]
+pub struct ReleaseList {
+    pub builds:   Vec<BuildEntry>,
+    pub releases: std::collections::HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BuildEntry {
+    pub version:   String,
+    pub path:      String,
+    pub sha256:    String,
+    #[serde(rename = "longVersion")]
+    pub long_version: String,
+}
+
+impl ReleaseList {
+    /// Tải list.json từ remote.
+    pub async fn fetch(platform: Platform) -> Result<Self, crate::SvmError> {
+        let url = format!("{}/{}/list.json", LIST_JSON_BASE, platform.url_prefix());
+        let resp = reqwest::get(&url).await?.error_for_status()?;
+        let list: Self = resp.json().await?;
+        Ok(list)
+    }
+
+    /// Lấy Release cho một version cụ thể.
+    pub fn get_release(&self, version: &Version, platform: Platform) -> Option<Release> {
+        let version_str = version.to_string();
+        self.builds.iter()
+            .find(|b| b.version == version_str)
+            .map(|b| Release {
+                path:   b.path.clone(),
+                sha256: b.sha256.clone(),
+                url:    format!(
+                    "{}/{}/{}",
+                    LIST_JSON_BASE,
+                    platform.url_prefix(),
+                    b.path
+                ),
+            })
+    }
+
+    /// Danh sách tất cả versions available (sorted giảm dần).
+    pub fn available_versions(&self) -> Vec<Version> {
+        let mut versions: Vec<Version> = self.builds.iter()
+            .filter_map(|b| Version::parse(&b.version).ok())
+            .collect();
+        versions.sort_unstable_by(|a, b| b.cmp(a));
+        versions
+    }
+}
+```
+
+---
+
+### 21.5 `install.rs` — Download + Verify Pipeline
+
+```rust
+// crates/svm-rs/src/install.rs
+
+use std::path::{Path, PathBuf};
+use sha2::{Sha256, Digest};
+use semver::Version;
+use crate::{Platform, Release, SvmError, paths};
+
+/// Tải về và cài đặt solc binary.
+///
+/// Pipeline:
+/// 1. Fetch list.json → tìm SHA-256 expected
+/// 2. Download binary → stream vào temp file
+/// 3. Verify SHA-256: hash(downloaded) == expected
+/// 4. Set executable permission (Unix)
+/// 5. Atomic move: temp → final path
+pub async fn install(
+    version:  &Version,
+    platform: Platform,
+    svm_home: &Path,
+) -> Result<PathBuf, SvmError> {
+    // 1. Fetch release metadata
+    let list    = crate::releases::ReleaseList::fetch(platform).await?;
+    let release = list.get_release(version, platform)
+        .ok_or_else(|| SvmError::VersionNotFound(version.clone()))?;
+
+    // 2. Download với progress tracking
+    let temp_path = svm_home.join(format!(".tmp-solc-{}", version));
+    download_to_file(&release.url, &temp_path).await?;
+
+    // 3. Verify SHA-256
+    verify_sha256(&temp_path, &release.sha256)?;
+
+    // 4. Set executable (Unix only)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&temp_path)?.permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&temp_path, perms)?;
+    }
+
+    // 5. Atomic rename
+    let final_path = paths::solc_path(svm_home, version);
+    std::fs::create_dir_all(final_path.parent().unwrap())?;
+    std::fs::rename(&temp_path, &final_path)?;
+
+    Ok(final_path)
+}
+
+/// Download file theo stream — tránh load toàn bộ vào RAM.
+async fn download_to_file(url: &str, dest: &Path) -> Result<(), SvmError> {
+    use tokio::io::AsyncWriteExt;
+    use futures_util::StreamExt;
+
+    let response = reqwest::get(url).await?.error_for_status()?;
+    let mut file  = tokio::fs::File::create(dest).await?;
+    let mut stream = response.bytes_stream();
+
+    while let Some(chunk) = stream.next().await {
+        file.write_all(&chunk?).await?;
+    }
+    file.flush().await?;
+    Ok(())
+}
+
+/// Verify SHA-256 của file đã download.
+///
+/// # Errors
+/// `SvmError::ChecksumMismatch` nếu hash không khớp.
+pub fn verify_sha256(path: &Path, expected_hex: &str) -> Result<(), SvmError> {
+    // Đọc file và tính hash theo chunk (tránh OOM với file lớn)
+    let mut file   = std::fs::File::open(path)?;
+    let mut hasher = Sha256::new();
+    std::io::copy(&mut file, &mut hasher)?;
+    let hash   = hasher.finalize();
+    let actual = hex::encode(hash);
+
+    // So sánh constant-time (tránh timing attack)
+    if !constant_time_eq(actual.as_bytes(), expected_hex.as_bytes()) {
+        return Err(SvmError::ChecksumMismatch {
+            expected: expected_hex.to_string(),
+            actual,
+        });
+    }
+    Ok(())
+}
+
+/// So sánh hai byte slices trong constant time.
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() { return false; }
+    a.iter().zip(b.iter()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}
+```
+
+---
+
+### 21.6 `error.rs` — SvmError
+
+```rust
+// crates/svm-rs/src/error.rs
+
+use semver::Version;
+
+/// Tất cả lỗi có thể xảy ra trong svm-rs.
+#[derive(Debug, thiserror::Error)]
+pub enum SvmError {
+    #[error("solc version {0} not found in release list")]
+    VersionNotFound(Version),
+
+    #[error("checksum mismatch: expected {expected}, got {actual}")]
+    ChecksumMismatch { expected: String, actual: String },
+
+    #[error("network error: {0}")]
+    Network(#[from] reqwest::Error),
+
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("json parse error: {0}")]
+    Json(#[from] serde_json::Error),
+
+    #[error("semver parse error: {0}")]
+    Semver(#[from] semver::Error),
+
+    #[error("solc not installed: {0} — run `svm install {0}`")]
+    NotInstalled(Version),
+
+    #[error("unsupported platform: {os}/{arch}")]
+    UnsupportedPlatform { os: String, arch: String },
+}
+```
+
+---
+
+### 21.7 `SvmManager` — Public API
+
+```rust
+// crates/svm-rs/src/manager.rs
+
+use semver::Version;
+use std::path::{Path, PathBuf};
+use crate::{Platform, SvmError, paths, releases, install};
+
+/// Entry point chính của svm-rs.
+///
+/// # Examples
+/// ```rust,no_run
+/// use svm_rs::SvmManager;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), svm_rs::SvmError> {
+///     let svm = SvmManager::new()?;
+///
+///     // Liệt kê phiên bản có thể cài
+///     let versions = svm.list_available().await?;
+///     println!("Latest: {}", versions[0]);
+///
+///     // Cài đặt (nếu chưa có)
+///     svm.install(&"0.8.26".parse()?).await?;
+///
+///     // Lấy path để gọi trực tiếp
+///     let path = svm.get_path(&"0.8.26".parse()?)?;
+///     println!("solc path: {}", path.display());
+///
+///     Ok(())
+/// }
+/// ```
+pub struct SvmManager {
+    home:     PathBuf,
+    platform: Platform,
+}
+
+impl SvmManager {
+    /// Tạo manager với home directory mặc định (`~/.svm`).
+    pub fn new() -> Result<Self, SvmError> {
+        let home = dirs::home_dir()
+            .ok_or_else(|| SvmError::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "cannot find home directory",
+            )))?
+            .join(".svm");
+        std::fs::create_dir_all(&home)?;
+        Ok(Self { home, platform: Platform::current() })
+    }
+
+    /// Tạo manager với home directory tùy chỉnh (dùng trong tests).
+    pub fn with_home(home: impl Into<PathBuf>) -> Result<Self, SvmError> {
+        let home = home.into();
+        std::fs::create_dir_all(&home)?;
+        Ok(Self { home, platform: Platform::current() })
+    }
+
+    /// Liệt kê tất cả versions có thể cài (từ binaries.soliditylang.org).
+    pub async fn list_available(&self) -> Result<Vec<Version>, SvmError> {
+        let list = releases::ReleaseList::fetch(self.platform).await?;
+        Ok(list.available_versions())
+    }
+
+    /// Liệt kê các versions đã cài trên máy.
+    pub fn list_installed(&self) -> Result<Vec<Version>, SvmError> {
+        let mut versions = Vec::new();
+        for entry in std::fs::read_dir(&self.home)? {
+            let entry = entry?;
+            let name  = entry.file_name();
+            let s     = name.to_string_lossy();
+            // Folder structure: ~/.svm/0.8.26/solc-0.8.26
+            if let Ok(v) = Version::parse(s.trim_start_matches('v')) {
+                if entry.path().is_dir() {
+                    versions.push(v);
+                }
+            }
+        }
+        versions.sort_unstable_by(|a, b| b.cmp(a));
+        Ok(versions)
+    }
+
+    /// Cài đặt một phiên bản (download + verify + install).
+    /// Idempotent: không làm gì nếu đã cài.
+    pub async fn install(&self, version: &Version) -> Result<PathBuf, SvmError> {
+        let path = paths::solc_path(&self.home, version);
+        if path.exists() {
+            return Ok(path); // Đã có rồi
+        }
+        install::install(version, self.platform, &self.home).await
+    }
+
+    /// Lấy path của solc binary.
+    /// Trả lỗi nếu chưa cài.
+    pub fn get_path(&self, version: &Version) -> Result<PathBuf, SvmError> {
+        let path = paths::solc_path(&self.home, version);
+        if path.exists() {
+            Ok(path)
+        } else {
+            Err(SvmError::NotInstalled(version.clone()))
+        }
+    }
+
+    /// Xóa một phiên bản đã cài.
+    pub fn remove(&self, version: &Version) -> Result<(), SvmError> {
+        let dir = self.home.join(version.to_string());
+        if dir.exists() {
+            std::fs::remove_dir_all(dir)?;
+        }
+        Ok(())
+    }
+}
+```
+
+---
+
+### 21.8 `svm-rs-builds` — Dùng trong `build.rs`
+
+```rust
+// crates/svm-rs-builds/src/lib.rs
+
+//! Helper cho `build.rs` — tự động download đúng phiên bản solc khi build.
+//!
+//! # Usage trong `build.rs`
+//! ```rust,no_run
+//! // build.rs của một project cần compile Solidity
+//! fn main() {
+//!     // Đảm bảo solc 0.8.26 có mặt; nếu chưa có thì download + verify
+//!     let solc_path = svm_rs_builds::prepare_solc("0.8.26")
+//!         .expect("failed to prepare solc");
+//!
+//!     // In ra biến môi trường để main code dùng
+//!     println!("cargo:rustc-env=SOLC_PATH={}", solc_path.display());
+//!     println!("cargo:rerun-if-changed=contracts/");
+//! }
+//! ```
+
+use std::path::PathBuf;
+
+/// Đảm bảo solc version được cài sẵn và trả về path.
+///
+/// Chạy bất đồng bộ nhưng block trong build.rs context.
+pub fn prepare_solc(version: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(async {
+        let svm = svm_rs::SvmManager::new()?;
+        let v   = version.parse()?;
+        svm.install(&v).await
+    })
+}
+
+/// Giống `prepare_solc` nhưng dùng SVM_HOME từ biến môi trường (CI-friendly).
+pub fn prepare_solc_env(version: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let home = std::env::var("SVM_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| dirs::home_dir().unwrap().join(".svm"));
+
+    let rt = tokio::runtime::Runtime::new()?;
+    rt.block_on(async {
+        let svm = svm_rs::SvmManager::with_home(home)?;
+        let v   = version.parse()?;
+        svm.install(&v).await
+    })
+}
+```
+
+---
+
+### 21.9 CLI (`svm-rs-cli`) — clap v4
+
+```rust
+// crates/svm-rs-cli/src/main.rs
+
+use clap::{Parser, Subcommand};
+use semver::Version;
+use svm_rs::SvmManager;
+
+#[derive(Parser)]
+#[command(
+    name    = "svm",
+    version = env!("CARGO_PKG_VERSION"),
+    about   = "Solidity Compiler Version Manager — wikialisalabs",
+    long_about = "Download, verify, and manage multiple Solidity compiler versions."
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Liệt kê các phiên bản có thể cài
+    #[command(alias = "ls-remote")]
+    List,
+
+    /// Liệt kê các phiên bản đã cài
+    #[command(alias = "ls")]
+    Installed,
+
+    /// Cài đặt một phiên bản
+    Install {
+        /// Phiên bản cần cài (e.g. 0.8.26)
+        version: String,
+    },
+
+    /// Xóa một phiên bản
+    Remove {
+        version: String,
+    },
+
+    /// Xác minh checksum của phiên bản đã cài
+    Verify {
+        version: String,
+    },
+
+    /// Chạy solc với phiên bản cụ thể
+    Exec {
+        /// Phiên bản cần dùng
+        version: String,
+        /// Tất cả arguments sau `--` truyền thẳng vào solc
+        #[arg(last = true)]
+        args: Vec<String>,
+    },
+}
+
+#[tokio::main]
+async fn main() -> eyre::Result<()> {
+    let cli = Cli::parse();
+    let svm = SvmManager::new()?;
+
+    match cli.command {
+        Commands::List => {
+            let versions = svm.list_available().await?;
+            for v in versions.iter().take(20) {
+                println!("{v}");
+            }
+            if versions.len() > 20 {
+                println!("... và {} phiên bản khác", versions.len() - 20);
+            }
+        }
+
+        Commands::Installed => {
+            let versions = svm.list_installed()?;
+            if versions.is_empty() {
+                println!("Chưa cài phiên bản nào. Dùng `svm install <version>`");
+            } else {
+                for v in &versions { println!("{v}"); }
+            }
+        }
+
+        Commands::Install { version } => {
+            let v: Version = version.parse()?;
+            let path = svm.install(&v).await?;
+            println!("✅ Đã cài solc {v} tại {}", path.display());
+        }
+
+        Commands::Remove { version } => {
+            let v: Version = version.parse()?;
+            svm.remove(&v)?;
+            println!("🗑️  Đã xóa solc {v}");
+        }
+
+        Commands::Verify { version } => {
+            let v = version.parse::<Version>()?;
+            let path = svm.get_path(&v)?;
+            // Re-download list.json và verify checksum
+            let list = svm_rs::releases::ReleaseList::fetch(
+                svm_rs::Platform::current()
+            ).await?;
+            let release = list.get_release(&v, svm_rs::Platform::current())
+                .ok_or_else(|| eyre::eyre!("version not found in release list"))?;
+            svm_rs::install::verify_sha256(&path, &release.sha256)?;
+            println!("✅ SHA-256 hợp lệ cho solc {v}");
+        }
+
+        Commands::Exec { version, args } => {
+            let v    = version.parse::<Version>()?;
+            let path = svm.get_path(&v)?;
+            let status = std::process::Command::new(path)
+                .args(&args)
+                .status()?;
+            std::process::exit(status.code().unwrap_or(1));
+        }
+    }
+
+    Ok(())
+}
+```
+
+---
+
+## 22. Giai đoạn 3 Chi tiết: `alloy` — Provider, Transport & Contract Binding
+
+> **Mục tiêu:** Meta-crate entry point duy nhất cho developer — Provider trait với Tower middleware, WebSocket subscriptions, và Contract ABI binding thông qua `sol!()` macro.
+
+---
+
+### 22.1 Cấu trúc Workspace `alloy`
+
+```
+wikialisalabs-evm/crates/
+├── alloy-network/            ← Network trait + Ethereum impl
+├── alloy-transport/          ← Tower service + BoxTransport
+├── alloy-transport-http/     ← HTTP transport (reqwest)
+├── alloy-transport-ws/       ← WebSocket transport (tokio-tungstenite)
+├── alloy-transport-ipc/      ← IPC transport (Unix domain socket)
+├── alloy-rpc-types/          ← JSON-RPC request/response types
+├── alloy-rpc-client/         ← Low-level JSON-RPC 2.0 client (batch support)
+├── alloy-provider/           ← Provider trait + ProviderBuilder + fillers
+├── alloy-pubsub/             ← eth_subscribe streams (newHeads, logs, pendingTx)
+├── alloy-signer/             ← Signer trait + EthereumWallet
+├── alloy-signer-local/       ← PrivateKeySigner (k256)
+├── alloy-contract/           ← Contract deploy/call/send (ABI binding)
+├── alloy-node-bindings/      ← Anvil/Geth process spawn (test helpers)
+└── alloy/                    ← Meta-crate: re-export all + unified feature flags
+```
+
+---
+
+### 22.2 `alloy-network` — Abstraction Layer cho Multi-chain
+
+```rust
+// crates/alloy-network/src/lib.rs
+
+use alloy_primitives::{Address, B256, Bytes, U256};
+
+/// Network trait — định nghĩa kiểu transaction và receipt cho một blockchain.
+///
+/// Implement trait này để thêm support cho bất kỳ EVM-compatible chain nào.
+///
+/// # Implemented networks
+/// - `Ethereum` — mainnet, testnets
+/// - `Optimism` — OP Stack chains (qua `op-alloy`)
+/// - `Wikialisalabs` — custom L1 (future)
+pub trait Network: Sized + Send + Sync + 'static {
+    /// Kiểu transaction request (chưa ký).
+    type TransactionRequest: TransactionBuilder<Self> + Default + Clone + Send + Sync;
+
+    /// Kiểu transaction đã ký và serialized (dùng để broadcast).
+    type TransactionEnvelope: TransactionEnvelope + Send + Sync;
+
+    /// Kiểu transaction trong block (response từ RPC).
+    type TransactionResponse: TransactionResponse + Send + Sync;
+
+    /// Kiểu receipt.
+    type ReceiptResponse: ReceiptResponse + Send + Sync;
+
+    /// Kiểu header block.
+    type HeaderResponse: HeaderResponse + Send + Sync;
+
+    /// Kiểu block đầy đủ.
+    type BlockResponse: BlockResponse<Self> + Send + Sync;
+}
+
+/// Transaction builder — populate các fields cần thiết trước khi ký.
+pub trait TransactionBuilder<N: Network>: Default + Sized {
+    fn set_from(&mut self, from: Address);
+    fn set_to(&mut self, to: Address);
+    fn set_value(&mut self, value: U256);
+    fn set_input(&mut self, input: Bytes);
+    fn set_nonce(&mut self, nonce: u64);
+    fn set_gas_limit(&mut self, gas_limit: u64);
+    fn set_max_fee_per_gas(&mut self, max_fee: u128);
+    fn set_max_priority_fee_per_gas(&mut self, priority_fee: u128);
+    fn set_chain_id(&mut self, chain_id: u64);
+    fn set_access_list(&mut self, list: alloy_eips::eip2930::AccessList);
+}
+
+/// Ethereum network implementation.
+pub struct Ethereum;
+
+impl Network for Ethereum {
+    type TransactionRequest  = alloy_rpc_types::TransactionRequest;
+    type TransactionEnvelope = alloy_consensus::TxEnvelope;
+    type TransactionResponse = alloy_rpc_types::Transaction;
+    type ReceiptResponse     = alloy_rpc_types::TransactionReceipt;
+    type HeaderResponse      = alloy_rpc_types::Header;
+    type BlockResponse       = alloy_rpc_types::Block;
+}
+```
+
+---
+
+### 22.3 `alloy-transport` — Tower Middleware Stack
+
+```rust
+// crates/alloy-transport/src/lib.rs
+
+use std::future::Future;
+use tower::Service;
+
+/// Transport — một Tower Service gửi JSON-RPC requests.
+///
+/// Được clone và wrap bởi các middleware layers.
+pub trait Transport:
+    Clone
+    + Send
+    + Sync
+    + Service<
+        alloy_json_rpc::RequestPacket,
+        Response = alloy_json_rpc::ResponsePacket,
+        Error    = TransportError,
+        Future   = TransportFut,
+    >
+    + 'static
+{}
+
+pub type TransportFut = std::pin::Pin<
+    Box<dyn Future<Output = Result<alloy_json_rpc::ResponsePacket, TransportError>> + Send>
+>;
+
+/// Boxed transport — type-erased cho dynamic dispatch.
+pub type BoxTransport = tower::util::BoxCloneService<
+    alloy_json_rpc::RequestPacket,
+    alloy_json_rpc::ResponsePacket,
+    TransportError,
+>;
+
+/// Lỗi transport.
+#[derive(Debug, thiserror::Error)]
+pub enum TransportError {
+    #[error("HTTP error {status}: {body}")]
+    Http { status: u16, body: String },
+
+    #[error("WebSocket error: {0}")]
+    WebSocket(String),
+
+    #[error("JSON serialization error: {0}")]
+    Ser(#[from] serde_json::Error),
+
+    #[error("connection closed")]
+    Closed,
+
+    #[error("request timed out after {secs}s")]
+    Timeout { secs: u64 },
+}
+```
+
+#### Tower Middleware Stack — Retry + Rate Limit + Timeout
+
+```rust
+// crates/alloy-transport/src/layers.rs
+
+use tower::{ServiceBuilder, timeout::TimeoutLayer, retry::RetryLayer};
+use std::time::Duration;
+
+/// Xây dựng transport với đầy đủ middleware.
+///
+/// # Stack (từ ngoài vào trong):
+/// ```text
+/// Request
+///   → Timeout (10s mặc định)
+///   → RetryLayer (3 lần, exponential backoff)
+///   → RateLimit (1000 req/s)
+///   → Inner Transport (HTTP/WS/IPC)
+/// ```
+pub fn build_transport_stack<T: Transport>(
+    inner: T,
+    config: TransportConfig,
+) -> impl Transport {
+    ServiceBuilder::new()
+        .layer(TimeoutLayer::new(config.request_timeout))
+        .layer(RetryLayer::new(RetryPolicy {
+            max_retries: config.max_retries,
+            backoff:     ExponentialBackoff::new(Duration::from_millis(100)),
+        }))
+        .layer(tower::limit::RateLimitLayer::new(
+            config.rate_limit_rps,
+            Duration::from_secs(1),
+        ))
+        .service(inner)
+}
+
+/// Cấu hình cho transport stack.
+pub struct TransportConfig {
+    /// Timeout cho mỗi request (default: 10s)
+    pub request_timeout: Duration,
+    /// Số lần retry khi gặp lỗi tạm thời (default: 3)
+    pub max_retries:     u32,
+    /// Rate limit requests/second (default: 1000)
+    pub rate_limit_rps:  u64,
+}
+
+impl Default for TransportConfig {
+    fn default() -> Self {
+        Self {
+            request_timeout: Duration::from_secs(10),
+            max_retries:     3,
+            rate_limit_rps:  1000,
+        }
+    }
+}
+
+/// Retry policy — retry khi gặp lỗi network tạm thời.
+struct RetryPolicy { max_retries: u32, backoff: ExponentialBackoff }
+
+impl<B: Clone> tower::retry::Policy<alloy_json_rpc::RequestPacket, B, TransportError>
+    for RetryPolicy
+{
+    type Future = std::future::Ready<Self>;
+
+    fn retry(&self, _req: &alloy_json_rpc::RequestPacket, result: Result<&B, &TransportError>)
+        -> Option<Self::Future>
+    {
+        match result {
+            Err(TransportError::Http { status, .. }) if *status == 429 || *status >= 500 => {
+                // Retry 429 Too Many Requests và 5xx Server Errors
+                Some(std::future::ready(Self {
+                    max_retries: self.max_retries - 1,
+                    backoff: self.backoff.clone(),
+                }))
+            }
+            Err(TransportError::Closed) => {
+                Some(std::future::ready(self.clone()))
+            }
+            _ => None,
+        }
+    }
+
+    fn clone_request(&self, req: &alloy_json_rpc::RequestPacket) -> Option<alloy_json_rpc::RequestPacket> {
+        Some(req.clone())
+    }
+}
+```
+
+---
+
+### 22.4 `alloy-provider` — Provider Trait & ProviderBuilder
+
+```rust
+// crates/alloy-provider/src/provider.rs
+
+use alloy_network::Network;
+use alloy_primitives::{Address, B256, Bytes, U256};
+use alloy_rpc_types::{Block, BlockId, BlockNumberOrTag, FeeHistory, Filter, Log, SyncStatus};
+use alloy_transport::Transport;
+
+/// Provider trait — giao diện tương tác với Ethereum node.
+///
+/// Blanket implementation cho bất kỳ `T: ProviderCall<N>`.
+/// Developer không implement trait này trực tiếp — dùng `ProviderBuilder`.
+#[async_trait::async_trait]
+pub trait Provider<N: Network = Ethereum>: Send + Sync + 'static {
+    // --- Block ---
+    async fn get_block_number(&self) -> ProviderResult<u64>;
+    async fn get_block(&self, id: BlockId, full: bool) -> ProviderResult<Option<N::BlockResponse>>;
+    async fn get_block_by_hash(&self, hash: B256, full: bool) -> ProviderResult<Option<N::BlockResponse>>;
+
+    // --- Account ---
+    async fn get_balance(&self, address: Address) -> ProviderResult<U256>;
+    async fn get_transaction_count(&self, address: Address) -> ProviderResult<u64>;
+    async fn get_code(&self, address: Address) -> ProviderResult<Bytes>;
+    async fn get_storage_at(&self, address: Address, slot: B256) -> ProviderResult<B256>;
+
+    // --- Transaction ---
+    async fn send_raw_transaction(&self, tx: &[u8]) -> ProviderResult<PendingTransactionBuilder<N>>;
+    async fn get_transaction_by_hash(&self, hash: B256) -> ProviderResult<Option<N::TransactionResponse>>;
+    async fn get_transaction_receipt(&self, hash: B256) -> ProviderResult<Option<N::ReceiptResponse>>;
+
+    // --- Gas ---
+    async fn estimate_gas(&self, tx: &N::TransactionRequest) -> ProviderResult<u64>;
+    async fn get_gas_price(&self) -> ProviderResult<u128>;
+    async fn get_max_priority_fee_per_gas(&self) -> ProviderResult<u128>;
+    async fn get_fee_history(&self, block_count: u64, newest: BlockNumberOrTag, reward_percentiles: &[f64]) -> ProviderResult<FeeHistory>;
+
+    // --- Logs ---
+    async fn get_logs(&self, filter: &Filter) -> ProviderResult<Vec<Log>>;
+
+    // --- Call (simulation) ---
+    async fn call(&self, tx: &N::TransactionRequest) -> ProviderResult<Bytes>;
+    async fn call_at(&self, tx: &N::TransactionRequest, block: BlockId) -> ProviderResult<Bytes>;
+
+    // --- Chain ---
+    async fn get_chain_id(&self) -> ProviderResult<u64>;
+    async fn syncing(&self) -> ProviderResult<SyncStatus>;
+}
+
+pub type ProviderResult<T> = Result<T, ProviderError>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ProviderError {
+    #[error("transport error: {0}")]
+    Transport(#[from] alloy_transport::TransportError),
+    #[error("JSON-RPC error {code}: {message}")]
+    JsonRpc { code: i64, message: String },
+    #[error("nonce too low: expected {expected}, got {actual}")]
+    NonceTooLow { expected: u64, actual: u64 },
+}
+```
+
+#### `ProviderBuilder` — Fluent Configuration
+
+```rust
+// crates/alloy-provider/src/builder.rs
+
+use alloy_network::{Ethereum, Network};
+use alloy_transport::{BoxTransport, Transport};
+use alloy_signer::EthereumWallet;
+use url::Url;
+
+/// Builder fluent để tạo Provider với middleware chain.
+///
+/// # Fillers
+/// "Fillers" tự động điền các fields còn thiếu trong TransactionRequest:
+/// - `NonceFiller`    — tự fetch + tăng nonce
+/// - `GasFiller`      — tự estimate gas + set EIP-1559 fees
+/// - `ChainIdFiller`  — tự fetch chain ID
+///
+/// # Examples
+///
+/// **HTTP Provider cơ bản:**
+/// ```rust
+/// let provider = ProviderBuilder::new()
+///     .on_http("https://eth-mainnet.example.com".parse()?);
+/// ```
+///
+/// **Với Wallet (ký + gửi transaction):**
+/// ```rust
+/// let signer = PrivateKeySigner::from_bytes(&private_key_bytes)?;
+/// let wallet = EthereumWallet::from(signer);
+///
+/// let provider = ProviderBuilder::new()
+///     .with_recommended_fillers()  // NonceFiller + GasFiller + ChainIdFiller
+///     .wallet(wallet)
+///     .on_http(rpc_url);
+/// ```
+///
+/// **WebSocket:**
+/// ```rust
+/// let provider = ProviderBuilder::new()
+///     .with_recommended_fillers()
+///     .on_ws(WsConnect::new("wss://eth-mainnet.example.com")).await?;
+/// ```
+pub struct ProviderBuilder<L = Identity, N = Ethereum> {
+    layer:   L,
+    network: PhantomData<N>,
+}
+
+impl ProviderBuilder {
+    pub fn new() -> Self {
+        Self { layer: Identity, network: PhantomData }
+    }
+}
+
+impl<L, N: Network> ProviderBuilder<L, N> {
+    /// Thêm tất cả fillers được khuyến nghị (Nonce + Gas + ChainId).
+    pub fn with_recommended_fillers(self) -> ProviderBuilder<
+        stack!(NonceFiller, GasFiller, ChainIdFiller, L), N
+    > {
+        self.layer(ChainIdFiller::default())
+            .layer(GasFiller::default())
+            .layer(NonceFiller::default())
+    }
+
+    /// Thêm wallet để ký tự động.
+    pub fn wallet(self, wallet: EthereumWallet)
+        -> ProviderBuilder<stack!(WalletFiller, L), N>
+    {
+        self.layer(WalletFiller::new(wallet))
+    }
+
+    /// Build với HTTP transport.
+    pub fn on_http(self, url: Url) -> impl Provider<N> {
+        let transport = alloy_transport_http::Http::new(url);
+        self.build_with_transport(transport)
+    }
+
+    /// Build với WebSocket transport (async).
+    pub async fn on_ws(self, conn: alloy_transport_ws::WsConnect)
+        -> Result<impl Provider<N>, alloy_transport::TransportError>
+    {
+        let transport = alloy_transport_ws::WsConnect::connect(conn).await?;
+        Ok(self.build_with_transport(transport))
+    }
+
+    /// Build với IPC transport (Linux/macOS).
+    pub async fn on_ipc(self, path: impl AsRef<std::path::Path>)
+        -> Result<impl Provider<N>, alloy_transport::TransportError>
+    {
+        let transport = alloy_transport_ipc::IpcConnect::connect(path).await?;
+        Ok(self.build_with_transport(transport))
+    }
+}
+```
+
+---
+
+### 22.5 `alloy-pubsub` — WebSocket Subscriptions
+
+```rust
+// crates/alloy-pubsub/src/lib.rs
+
+use alloy_primitives::{B256, Log};
+use alloy_rpc_types::{Header, Transaction};
+use futures_core::Stream;
+
+/// Subscription stream cho các events real-time từ Ethereum node.
+pub trait PubSubProvider: Provider {
+    /// Subscribe vào stream block headers mới.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use futures_util::StreamExt;
+    ///
+    /// let mut stream = provider.subscribe_blocks().await?;
+    /// while let Some(header) = stream.next().await {
+    ///     println!("New block #{}: {}", header.number, header.hash);
+    /// }
+    /// ```
+    async fn subscribe_blocks(&self)
+        -> ProviderResult<impl Stream<Item = Header> + Send>;
+
+    /// Subscribe vào stream logs theo filter.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use alloy_rpc_types::Filter;
+    /// use alloy_primitives::address;
+    ///
+    /// let filter = Filter::new()
+    ///     .address(address!("0xUniswapV2..."))
+    ///     .event("Swap(address,uint256,uint256,uint256,uint256,address)");
+    ///
+    /// let mut stream = provider.subscribe_logs(&filter).await?;
+    /// while let Some(log) = stream.next().await {
+    ///     println!("Swap event at tx {}", log.transaction_hash.unwrap());
+    /// }
+    /// ```
+    async fn subscribe_logs(&self, filter: &Filter)
+        -> ProviderResult<impl Stream<Item = Log> + Send>;
+
+    /// Subscribe vào stream pending transactions.
+    async fn subscribe_pending_transactions(&self)
+        -> ProviderResult<impl Stream<Item = B256> + Send>;
+
+    /// Unsubscribe (hủy subscription).
+    async fn unsubscribe(&self, id: alloy_primitives::U256) -> ProviderResult<bool>;
+}
+```
+
+---
+
+### 22.6 `alloy-signer` — Trait & EthereumWallet
+
+```rust
+// crates/alloy-signer/src/lib.rs
+
+use alloy_primitives::{Address, B256, Bytes};
+
+/// Trait ký transaction và message.
+///
+/// Implement cho: local key, hardware wallet (Ledger, Trezor), AWS KMS,
+/// WebAuthn/Passkey (AXIO Vault), multi-sig.
+#[async_trait::async_trait]
+pub trait Signer: Send + Sync {
+    /// Ký một raw message hash (32 bytes).
+    async fn sign_hash(&self, hash: &B256) -> SignerResult<Signature>;
+
+    /// Ký một typed data (EIP-712).
+    async fn sign_typed_data<T: alloy_sol_types::SolStruct + Send + Sync>(
+        &self,
+        payload: &T,
+        domain: &alloy_sol_types::Eip712Domain,
+    ) -> SignerResult<Signature> {
+        let hash = payload.eip712_signing_hash(domain);
+        self.sign_hash(&hash).await
+    }
+
+    /// Địa chỉ Ethereum tương ứng với key.
+    fn address(&self) -> Address;
+
+    /// Chain ID mà signer này gắn với (None = không giới hạn).
+    fn chain_id(&self) -> Option<u64>;
+}
+
+/// Chữ ký ECDSA secp256k1 — 65 bytes (r, s, v).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Signature {
+    pub r: alloy_primitives::B256,
+    pub s: alloy_primitives::B256,
+    pub v: bool,  // recovery bit
+}
+
+impl Signature {
+    /// Recover địa chỉ từ signature và message hash.
+    pub fn recover_address(&self, hash: &B256) -> SignerResult<Address> {
+        use k256::ecdsa::{RecoveryId, VerifyingKey};
+        let rec_id = RecoveryId::from_byte(self.v as u8)
+            .ok_or(SignerError::InvalidRecoveryId)?;
+        let sig = k256::ecdsa::Signature::from_scalars(
+            k256::FieldBytes::from(self.r.0),
+            k256::FieldBytes::from(self.s.0),
+        )?;
+        let key = VerifyingKey::recover_from_prehash(hash.as_slice(), &sig, rec_id)?;
+        let point = key.to_encoded_point(false);
+        let hash  = alloy_primitives::keccak256(&point.as_bytes()[1..]);
+        Ok(Address::from_slice(&hash[12..]))
+    }
+}
+
+pub type SignerResult<T> = Result<T, SignerError>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum SignerError {
+    #[error("ECDSA error: {0}")]
+    Ecdsa(String),
+    #[error("invalid recovery ID")]
+    InvalidRecoveryId,
+    #[error("hardware wallet error: {0}")]
+    HardwareWallet(String),
+    #[error("user rejected request")]
+    UserRejected,
+}
+```
+
+#### `PrivateKeySigner` — Local Key
+
+```rust
+// crates/alloy-signer-local/src/lib.rs
+
+use alloy_primitives::{Address, B256};
+use alloy_signer::{Signer, SignerError, Signature};
+use k256::ecdsa::SigningKey;
+
+/// Signer sử dụng private key lưu trong RAM.
+///
+/// # Security Note
+/// Key được giữ unencrypted trong RAM. Cho production, dùng
+/// hardware wallet hoặc AWS KMS thay thế.
+///
+/// # Examples
+/// ```rust
+/// use alloy_signer_local::PrivateKeySigner;
+///
+/// // Từ hex string
+/// let signer: PrivateKeySigner =
+///     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".parse()?;
+///
+/// // Random key (cho testing)
+/// let signer = PrivateKeySigner::random();
+///
+/// println!("Address: {}", signer.address());
+/// ```
+pub struct PrivateKeySigner {
+    key:      SigningKey,
+    address:  Address,
+    chain_id: Option<u64>,
+}
+
+impl PrivateKeySigner {
+    /// Tạo signer từ raw bytes private key.
+    pub fn from_bytes(bytes: &[u8; 32]) -> Result<Self, SignerError> {
+        let key     = SigningKey::from_bytes(bytes.into())
+            .map_err(|e| SignerError::Ecdsa(e.to_string()))?;
+        let address = Self::key_to_address(&key);
+        Ok(Self { key, address, chain_id: None })
+    }
+
+    /// Tạo signer ngẫu nhiên (chỉ dùng cho test).
+    pub fn random() -> Self {
+        let key     = SigningKey::random(&mut rand::thread_rng());
+        let address = Self::key_to_address(&key);
+        Self { key, address, chain_id: None }
+    }
+
+    /// Đặt chain ID (EIP-155 replay protection).
+    pub fn with_chain_id(mut self, chain_id: u64) -> Self {
+        self.chain_id = Some(chain_id); self
+    }
+
+    fn key_to_address(key: &SigningKey) -> Address {
+        let point = key.verifying_key().to_encoded_point(false);
+        let hash  = alloy_primitives::keccak256(&point.as_bytes()[1..]);
+        Address::from_slice(&hash[12..])
+    }
+}
+
+#[async_trait::async_trait]
+impl Signer for PrivateKeySigner {
+    async fn sign_hash(&self, hash: &B256) -> alloy_signer::SignerResult<Signature> {
+        use k256::ecdsa::signature::hazmat::PrehashSigner;
+        let (sig, rec_id) = self.key
+            .sign_prehash(hash.as_slice())
+            .map_err(|e| SignerError::Ecdsa(e.to_string()))?;
+        Ok(Signature {
+            r: B256::from_slice(&sig.r().to_bytes()),
+            s: B256::from_slice(&sig.s().to_bytes()),
+            v: rec_id.to_byte() != 0,
+        })
+    }
+
+    fn address(&self)   -> Address    { self.address }
+    fn chain_id(&self)  -> Option<u64> { self.chain_id }
+}
+```
+
+---
+
+### 22.7 `alloy-contract` — ABI-generated Contract Binding
+
+```rust
+// crates/alloy-contract/src/lib.rs
+
+use alloy_primitives::{Address, Bytes};
+use alloy_provider::Provider;
+use alloy_sol_types::SolCall;
+
+/// ContractInstance — handle để tương tác với một deployed contract.
+pub struct ContractInstance<T, P: Provider<N>, N: Network = Ethereum> {
+    address:  Address,
+    provider: P,
+    _pd: PhantomData<(T, N)>,
+}
+
+impl<T, P: Provider<N>, N: Network> ContractInstance<T, P, N> {
+    pub fn new(address: Address, provider: P) -> Self {
+        Self { address, provider, _pd: PhantomData }
+    }
+
+    pub fn address(&self) -> Address { self.address }
+}
+
+/// Macro tạo contract binding từ ABI inline.
+///
+/// # Examples
+///
+/// **ERC-20 Transfer:**
+/// ```rust
+/// use alloy::sol;
+///
+/// sol! {
+///     #[sol(rpc)]
+///     interface IERC20 {
+///         function transfer(address to, uint256 amount) external returns (bool);
+///         function balanceOf(address owner) external view returns (uint256);
+///         event Transfer(address indexed from, address indexed to, uint256 value);
+///     }
+/// }
+///
+/// // Deploy (nếu có bytecode)
+/// // let contract = IERC20::deploy(&provider).await?;
+///
+/// // Attach tới địa chỉ đã deploy
+/// let contract = IERC20::new(
+///     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48".parse()?,
+///     &provider,
+/// );
+///
+/// // Call (read-only, không tốn gas)
+/// let balance = contract.balanceOf(my_address).call().await?._0;
+/// println!("Balance: {} USDC", balance);
+///
+/// // Send (write, cần wallet)
+/// let receipt = contract
+///     .transfer(recipient, U256::from(1_000_000u64))
+///     .send()
+///     .await?
+///     .get_receipt()
+///     .await?;
+/// println!("Tx: {}", receipt.transaction_hash);
+/// ```
+```
+
+#### `PendingTransactionBuilder` — Await Transaction Confirmation
+
+```rust
+// crates/alloy-provider/src/pending_transaction.rs
+
+use alloy_primitives::B256;
+
+/// Handle cho một transaction đã broadcast — chờ confirmation.
+pub struct PendingTransactionBuilder<N: Network> {
+    provider:   Arc<dyn Provider<N>>,
+    tx_hash:    B256,
+    confirmations: u64,
+    timeout:    Option<std::time::Duration>,
+}
+
+impl<N: Network> PendingTransactionBuilder<N> {
+    /// Số block confirmations cần đợi (default: 1).
+    pub fn with_required_confirmations(mut self, n: u64) -> Self {
+        self.confirmations = n; self
+    }
+
+    /// Timeout tổng (default: 60s).
+    pub fn with_timeout(mut self, d: std::time::Duration) -> Self {
+        self.timeout = Some(d); self
+    }
+
+    /// Đợi transaction được include vào block.
+    pub async fn watch(self) -> ProviderResult<B256> {
+        self.get_receipt().await.map(|r| r.transaction_hash())
+    }
+
+    /// Đợi và trả về receipt đầy đủ.
+    pub async fn get_receipt(self) -> ProviderResult<N::ReceiptResponse> {
+        let deadline = self.timeout.map(|d| tokio::time::Instant::now() + d);
+        loop {
+            if let Some(d) = deadline {
+                if tokio::time::Instant::now() > d {
+                    return Err(ProviderError::Timeout(self.tx_hash));
+                }
+            }
+            match self.provider.get_transaction_receipt(self.tx_hash).await? {
+                Some(receipt) => return Ok(receipt),
+                None => tokio::time::sleep(std::time::Duration::from_secs(1)).await,
+            }
+        }
+    }
+
+    pub fn tx_hash(&self) -> B256 { self.tx_hash }
+}
+```
+
+---
+
+### 22.8 Integration Test — End-to-End với Anvil
+
+```rust
+// tests/integration/send_transaction.rs
+//! Integration test: gửi ETH và đợi receipt — chạy vs Anvil local node.
+
+use alloy::{
+    network::EthereumWallet,
+    providers::ProviderBuilder,
+    signers::local::PrivateKeySigner,
+    primitives::{address, U256},
+    node_bindings::Anvil,
+};
+
+#[tokio::test]
+async fn test_send_eth_and_get_receipt() -> eyre::Result<()> {
+    // 1. Khởi động Anvil local node
+    let anvil    = Anvil::new().block_time(1).spawn();
+    let rpc_url  = anvil.endpoint_url();
+
+    // 2. Lấy account đầu tiên của Anvil (pre-funded với 10000 ETH)
+    let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
+    let wallet   = EthereumWallet::from(signer);
+    let sender   = wallet.default_signer().address();
+
+    // 3. Build provider với wallet
+    let provider = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .wallet(wallet)
+        .on_http(rpc_url);
+
+    // 4. Build và gửi transaction
+    let recipient = address!("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+    let tx = alloy::rpc::types::TransactionRequest::default()
+        .from(sender)
+        .to(recipient)
+        .value(U256::from(1_000_000_000u64)); // 1 Gwei
+
+    let receipt = provider
+        .send_transaction(tx)
+        .await?
+        .with_required_confirmations(1)
+        .get_receipt()
+        .await?;
+
+    // 5. Assert
+    assert!(receipt.status(), "Transaction should succeed");
+    assert_eq!(receipt.from, sender);
+    assert_eq!(
+        provider.get_balance(recipient).await?,
+        U256::from(1_000_000_000u64) // Kiểm tra số dư tăng đúng
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_subscribe_blocks() -> eyre::Result<()> {
+    use futures_util::StreamExt;
+
+    let anvil   = Anvil::new().block_time(1).spawn();
+    let ws_url  = anvil.ws_endpoint_url();
+
+    let provider = ProviderBuilder::new()
+        .on_ws(alloy::transports::ws::WsConnect::new(ws_url))
+        .await?;
+
+    let mut stream = provider.subscribe_blocks().await?;
+
+    // Đợi 3 blocks
+    let mut count = 0;
+    while let Some(header) = stream.next().await {
+        count += 1;
+        println!("Block #{}: {}", header.number, header.hash);
+        if count >= 3 { break; }
+    }
+    assert_eq!(count, 3);
+
+    Ok(())
+}
+```
+
+---
+
+### 22.9 `alloy-node-bindings` — Anvil/Geth Process Management
+
+```rust
+// crates/alloy-node-bindings/src/anvil.rs
+
+use std::process::{Child, Command};
+use url::Url;
+
+/// Anvil local Ethereum node — dùng cho integration tests.
+///
+/// # Examples
+/// ```rust,no_run
+/// use alloy::node_bindings::Anvil;
+///
+/// let anvil = Anvil::new()
+///     .port(8545)
+///     .chain_id(31337)
+///     .block_time(1)           // Mine 1 block/giây
+///     .fork("https://eth-mainnet.example.com")  // Fork mainnet
+///     .spawn();
+///
+/// println!("Anvil RPC: {}", anvil.endpoint());
+/// println!("Accounts: {:?}", anvil.addresses());
+/// ```
+pub struct AnvilInstance {
+    child:     Child,
+    port:      u16,
+    addresses: Vec<alloy_primitives::Address>,
+    keys:      Vec<k256::SecretKey>,
+    chain_id:  u64,
+}
+
+impl AnvilInstance {
+    pub fn endpoint(&self) -> String {
+        format!("http://localhost:{}", self.port)
+    }
+
+    pub fn endpoint_url(&self) -> Url {
+        self.endpoint().parse().unwrap()
+    }
+
+    pub fn ws_endpoint(&self) -> String {
+        format!("ws://localhost:{}", self.port)
+    }
+
+    pub fn ws_endpoint_url(&self) -> Url {
+        self.ws_endpoint().parse().unwrap()
+    }
+
+    pub fn addresses(&self) -> &[alloy_primitives::Address] { &self.addresses }
+    pub fn keys(&self)      -> &[k256::SecretKey]          { &self.keys }
+    pub fn chain_id(&self)  -> u64                          { self.chain_id }
+}
+
+impl Drop for AnvilInstance {
+    /// Tự động kill process khi instance bị drop.
+    fn drop(&mut self) { let _ = self.child.kill(); }
+}
+
+pub struct Anvil {
+    port:       Option<u16>,
+    chain_id:   Option<u64>,
+    block_time: Option<u64>,
+    fork_url:   Option<String>,
+}
+
+impl Anvil {
+    pub fn new() -> Self { Self::default() }
+    pub fn port(mut self, port: u16)              -> Self { self.port = Some(port); self }
+    pub fn chain_id(mut self, id: u64)            -> Self { self.chain_id = Some(id); self }
+    pub fn block_time(mut self, secs: u64)        -> Self { self.block_time = Some(secs); self }
+    pub fn fork(mut self, url: impl Into<String>) -> Self { self.fork_url = Some(url.into()); self }
+
+    /// Spawn Anvil process — panic nếu `anvil` binary không có trong PATH.
+    pub fn spawn(self) -> AnvilInstance {
+        let port = self.port.unwrap_or(8545);
+        let mut cmd = Command::new("anvil");
+        cmd.arg("--port").arg(port.to_string());
+        if let Some(id)   = self.chain_id  { cmd.arg("--chain-id").arg(id.to_string()); }
+        if let Some(secs) = self.block_time { cmd.arg("--block-time").arg(secs.to_string()); }
+        if let Some(url)  = &self.fork_url  { cmd.arg("--fork-url").arg(url); }
+
+        let child = cmd.spawn().expect("anvil not found in PATH — install Foundry");
+        // Đợi node ready
+        std::thread::sleep(std::time::Duration::from_millis(500));
+
+        AnvilInstance {
+            child,
+            port,
+            addresses: vec![], // populate từ stdout parse
+            keys:      vec![],
+            chain_id:  self.chain_id.unwrap_or(31337),
+        }
+    }
+}
+```
+
+---
+
+## 23. Giai đoạn 4 Chi tiết: `evm2` Block-STM & `op-alloy` SQX Integration
+
+> **Mục tiêu:** `evm2` — parallel execution engine thế hệ mới với Block-STM và ZK-IR output; `op-alloy` — bridge layer giữa Ethereum types và SEQUENTICHAIN L2 execution.
+
+---
+
+### 23.1 Block-STM — Parallel Execution Architecture
+
+#### Nguyên lý hoạt động
+
+```
+Block N: [Tx0, Tx1, Tx2, Tx3, Tx4, Tx5, Tx6, Tx7]
+          │
+          ▼ BƯỚC 1: Optimistic Execution (song song, Rayon)
+          ┌────────────────────────────────────────────┐
+          │ Thread 0 │ Thread 1 │ Thread 2 │ Thread 3 │
+          │ Tx0, Tx4 │ Tx1, Tx5 │ Tx2, Tx6 │ Tx3, Tx7 │
+          │ (record read/write sets)                   │
+          └────────────────────────────────────────────┘
+          │
+          ▼ BƯỚC 2: Conflict Detection
+          ┌────────────────────────────────────────────┐
+          │ Tx_i conflicts Tx_j iff:                   │
+          │   write_set(Tx_i) ∩ read_set(Tx_j) ≠ ∅   │
+          │   where i < j (earlier tx writes,          │
+          │                later tx reads)             │
+          └────────────────────────────────────────────┘
+          │
+          ▼ BƯỚC 3: Validation & Re-execution
+          ┌────────────────────────────────────────────┐
+          │ Conflicted txs → re-execute serially       │
+          │ Non-conflicted → merge state changes ✓     │
+          └────────────────────────────────────────────┘
+```
+
+#### Core Data Structures
+
+```rust
+// crates/evm2-parallel/src/stm.rs
+
+use std::sync::{Arc, RwLock};
+use hashbrown::HashMap;
+use alloy_primitives::{Address, B256, U256};
+
+/// Multi-Version Data Structure — lưu nhiều phiên bản của mỗi storage slot.
+/// Key insight: mỗi version được gắn với index của tx đã write nó.
+#[derive(Default)]
+pub struct MultiVersionData {
+    /// storage[address][slot] = Vec<(tx_index, value)> sorted by tx_index
+    storage: HashMap<Address, HashMap<U256, Vec<(usize, MVValue)>>>,
+}
+
+/// Giá trị trong MVCC.
+enum MVValue {
+    /// Tx đã commit giá trị này
+    Value(U256),
+    /// Tx đã SELFDESTRUCT account
+    Deleted,
+    /// Tx chưa finish (đang estimate, placeholder)
+    Estimate,
+}
+
+impl MultiVersionData {
+    /// Đọc giá trị storage từ góc nhìn của tx_index.
+    /// Trả về giá trị của tx có index lớn nhất < tx_index.
+    pub fn read(&self, address: Address, slot: U256, tx_index: usize)
+        -> ReadResult
+    {
+        let versions = match self.storage.get(&address).and_then(|m| m.get(&slot)) {
+            Some(v) => v,
+            None => return ReadResult::NotFound,
+        };
+
+        // Tìm version mới nhất có index < tx_index
+        let pos = versions.partition_point(|(idx, _)| *idx < tx_index);
+        if pos == 0 { return ReadResult::NotFound; }
+
+        match &versions[pos - 1].1 {
+            MVValue::Value(v)  => ReadResult::Value(*v, versions[pos - 1].0),
+            MVValue::Estimate  => ReadResult::Blocked(versions[pos - 1].0),
+            MVValue::Deleted   => ReadResult::Deleted,
+        }
+    }
+
+    /// Ghi giá trị storage cho tx_index.
+    pub fn write(&mut self, address: Address, slot: U256, tx_index: usize, value: U256) {
+        self.storage
+            .entry(address).or_default()
+            .entry(slot).or_default()
+            .push((tx_index, MVValue::Value(value)));
+    }
+}
+
+/// Kết quả khi đọc từ MVCC.
+pub enum ReadResult {
+    Value(U256, usize),  // (value, written_by_tx_index)
+    Blocked(usize),      // Tx đang ghi (estimate) — cần đợi
+    NotFound,            // Không có version nào
+    Deleted,             // Account đã bị SELFDESTRUCT
+}
+
+/// Scheduler cho Block-STM — quản lý trạng thái thực thi của từng tx.
+pub struct Scheduler {
+    num_txs:        usize,
+    tx_status:      Vec<RwLock<TxStatus>>,
+    execution_idx:  std::sync::atomic::AtomicUsize,
+    validation_idx: std::sync::atomic::AtomicUsize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TxStatus {
+    ReadyToExecute,
+    Executing,
+    Executed,
+    Aborting,           // Cần re-execute
+    ExecutedAndValidated,
+}
+
+impl Scheduler {
+    pub fn new(num_txs: usize) -> Self {
+        Self {
+            num_txs,
+            tx_status: (0..num_txs).map(|_| RwLock::new(TxStatus::ReadyToExecute)).collect(),
+            execution_idx:  std::sync::atomic::AtomicUsize::new(0),
+            validation_idx: std::sync::atomic::AtomicUsize::new(0),
+        }
+    }
+
+    /// Lấy tx tiếp theo cần execute.
+    pub fn next_task(&self) -> Option<Task> {
+        let exec_idx = self.execution_idx.load(std::sync::atomic::Ordering::Acquire);
+        if exec_idx < self.num_txs {
+            Some(Task::Execute(exec_idx))
+        } else {
+            let val_idx = self.validation_idx.load(std::sync::atomic::Ordering::Acquire);
+            if val_idx < self.num_txs {
+                Some(Task::Validate(val_idx))
+            } else {
+                None // Tất cả done
+            }
+        }
+    }
+}
+
+/// Task cho một worker thread.
+pub enum Task {
+    Execute(usize),   // Execute tx tại index này
+    Validate(usize),  // Validate tx tại index này
+}
+```
+
+---
+
+### 23.2 ZK-IR — Intermediate Representation cho ZK Circuits
+
+```rust
+// crates/evm2-ir/src/lib.rs
+
+use alloy_primitives::{Address, B256, U256, Bytes};
+
+/// ZK-friendly Intermediate Representation của một EVM execution.
+///
+/// Dùng để feed vào Halo2 / Plonky2 circuit builder trong VERACIPHERS ($VRQ).
+/// Thiết kế để minimize số lượng constraints trong ZK circuit.
+#[derive(Debug, Clone)]
+pub struct ExecutionTrace {
+    /// Danh sách các bước thực thi (mỗi opcode = 1 step)
+    pub steps:        Vec<ExecutionStep>,
+    /// Memory access log (read + write)
+    pub memory_ops:   Vec<MemoryOp>,
+    /// Storage access log
+    pub storage_ops:  Vec<StorageOp>,
+    /// Stack operations
+    pub stack_ops:    Vec<StackOp>,
+    /// Call frames
+    pub call_frames:  Vec<CallFrame>,
+    /// Kết quả cuối
+    pub result:       ExecutionResult,
+}
+
+/// Một bước thực thi đơn (một opcode).
+#[derive(Debug, Clone)]
+pub struct ExecutionStep {
+    /// Program counter
+    pub pc:           u64,
+    /// Opcode
+    pub opcode:       u8,
+    /// Gas còn lại trước khi execute
+    pub gas_left:     u64,
+    /// Gas tốn cho opcode này
+    pub gas_cost:     u64,
+    /// Keccak256 hash của memory state tại bước này
+    pub memory_root:  B256,
+    /// Hash của stack state
+    pub stack_depth:  u16,
+    /// Stack top 8 elements (cho verification)
+    pub stack_top:    [U256; 8],
+}
+
+/// Storage operation log.
+#[derive(Debug, Clone)]
+pub struct StorageOp {
+    pub address:   Address,
+    pub slot:      U256,
+    pub op_type:   StorageOpType,
+    pub value:     U256,
+    pub prev_value: U256,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum StorageOpType { SLoad, SStore, TLoad, TStore }
+
+/// Builder để tạo ExecutionTrace từ EVM execution.
+pub struct TraceBuilder {
+    steps:      Vec<ExecutionStep>,
+    memory_ops: Vec<MemoryOp>,
+    storage_ops: Vec<StorageOp>,
+    stack_ops:  Vec<StackOp>,
+}
+
+impl TraceBuilder {
+    pub fn new() -> Self { Self::default() }
+
+    pub fn record_step(&mut self, step: ExecutionStep) {
+        self.steps.push(step);
+    }
+
+    pub fn record_storage_read(&mut self, address: Address, slot: U256, value: U256) {
+        self.storage_ops.push(StorageOp {
+            address, slot, value, prev_value: value,
+            op_type: StorageOpType::SLoad,
+        });
+    }
+
+    pub fn record_storage_write(&mut self, address: Address, slot: U256, new: U256, old: U256) {
+        self.storage_ops.push(StorageOp {
+            address, slot, value: new, prev_value: old,
+            op_type: StorageOpType::SStore,
+        });
+    }
+
+    /// Finalize trace — tính toán hash cho verification.
+    pub fn build(self, result: ExecutionResult) -> ExecutionTrace {
+        ExecutionTrace {
+            steps:       self.steps,
+            memory_ops:  self.memory_ops,
+            storage_ops: self.storage_ops,
+            stack_ops:   self.stack_ops,
+            call_frames: vec![],
+            result,
+        }
+    }
+}
+```
+
+---
+
+### 23.3 `op-alloy` — OP Stack Bridge với SEQUENTICHAIN
+
+```rust
+// crates/op-alloy-consensus/src/transaction/deposit.rs
+
+use alloy_primitives::{Address, B256, Bytes, TxKind, U256};
+
+/// Deposit transaction — tạo ra trên L2 để phản ánh sự kiện từ L1.
+///
+/// Khi một sự kiện được emit từ `OptimismPortal` trên L1,
+/// SEQUENTICHAIN tạo ra TxDeposit tương ứng trên L2.
+///
+/// # Source Hash
+/// `source_hash = keccak256(deposit_source_domain ++ user_deposit_hash)`
+/// đảm bảo mỗi deposit chỉ được include một lần.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TxDeposit {
+    /// Hash định danh nguồn gốc deposit (ngăn replay)
+    pub source_hash:           B256,
+    /// Địa chỉ gửi deposit trên L1
+    pub from:                  Address,
+    /// Địa chỉ nhận trên L2
+    pub to:                    TxKind,
+    /// ETH được mint trên L2 (từ ETH lock trên L1)
+    pub mint:                  Option<u128>,
+    /// ETH value trong L2 transaction
+    pub value:                 U256,
+    /// Gas limit
+    pub gas_limit:             u64,
+    /// True nếu đây là system transaction (ví dụ: L1BlockInfo)
+    pub is_system_transaction: bool,
+    /// Calldata
+    pub input:                 Bytes,
+}
+
+impl TxDeposit {
+    /// Tính source hash cho user deposit (domain = 0).
+    pub fn user_source_hash(l1_block_hash: B256, l1_log_index: u64) -> B256 {
+        let mut buf = [0u8; 64];
+        buf[..32].copy_from_slice(l1_block_hash.as_slice());
+        buf[32..].copy_from_slice(&l1_log_index.to_be_bytes().repeat(4)[..32]);
+        alloy_primitives::keccak256(&buf)
+    }
+}
+
+/// OP Stack Transaction Envelope — bao gồm tất cả L2 tx types.
+#[derive(Clone, Debug)]
+pub enum OpTxEnvelope {
+    /// Legacy transaction (type 0)
+    Legacy(Signed<TxLegacy>),
+    /// EIP-2930 access list (type 1)
+    Eip2930(Signed<TxEip2930>),
+    /// EIP-1559 dynamic fee (type 2)
+    Eip1559(Signed<TxEip1559>),
+    /// EIP-4844 blob (type 3)
+    Eip4844(Signed<TxEip4844Variant>),
+    /// OP Deposit (type 0x7E) — không có signature
+    Deposit(TxDeposit),
+}
+
+impl OpTxEnvelope {
+    pub fn tx_type(&self) -> u8 {
+        match self {
+            Self::Legacy(_)  => 0x00,
+            Self::Eip2930(_) => 0x01,
+            Self::Eip1559(_) => 0x02,
+            Self::Eip4844(_) => 0x03,
+            Self::Deposit(_) => 0x7E,
+        }
+    }
+
+    pub fn is_deposit(&self) -> bool {
+        matches!(self, Self::Deposit(_))
+    }
+}
+```
+
+#### `L1BlockInfo` — Thông tin L1 được inject vào mỗi L2 Block
+
+```rust
+// crates/op-alloy-consensus/src/l1_block_info.rs
+
+use alloy_primitives::{Address, B256, U256};
+
+/// Thông tin L1 được gắn vào transaction đầu tiên của mỗi L2 block.
+///
+/// SEQUENTICHAIN inject L1BlockInfo để L2 contracts có thể:
+/// - Xác minh trạng thái L1
+/// - Tính L1 data fee cho transactions
+/// - Triển khai cross-chain messaging
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct L1BlockInfo {
+    /// Block number của L1
+    pub number:             u64,
+    /// Timestamp của L1 block
+    pub time:               u64,
+    /// Base fee của L1 block
+    pub base_fee:           u64,
+    /// Hash của L1 block
+    pub block_hash:         B256,
+    /// Sequence number trong L2 epoch
+    pub sequence_number:    u64,
+    /// Batcher address (địa chỉ submit batches lên L1)
+    pub batcher_address:    Address,
+    /// L1 fee overhead
+    pub l1_fee_overhead:    U256,
+    /// L1 fee scalar
+    pub l1_fee_scalar:      U256,
+    /// Blob base fee (Ecotone upgrade)
+    pub blob_base_fee:      Option<u128>,
+    /// Base fee scalar (Ecotone)
+    pub base_fee_scalar:    Option<u32>,
+    /// Blob base fee scalar (Ecotone)
+    pub blob_base_fee_scalar: Option<u32>,
+}
+
+impl L1BlockInfo {
+    /// Function selector của `setL1BlockValues()` — 0x015d8eb9
+    pub const SELECTOR_PRE_ECOTONE: [u8; 4] = [0x01, 0x5d, 0x8e, 0xb9];
+    /// Function selector của `setL1BlockValuesEcotone()` — 0x440a5e20
+    pub const SELECTOR_ECOTONE: [u8; 4]    = [0x44, 0x0a, 0x5e, 0x20];
+
+    /// Decode từ calldata của L1 attributes transaction.
+    pub fn decode_calldata(calldata: &[u8]) -> Result<Self, DecodeError> {
+        if calldata.len() < 4 { return Err(DecodeError::TooShort); }
+
+        match calldata[..4].try_into().unwrap() {
+            Self::SELECTOR_PRE_ECOTONE => Self::decode_pre_ecotone(&calldata[4..]),
+            Self::SELECTOR_ECOTONE     => Self::decode_ecotone(&calldata[4..]),
+            sel => Err(DecodeError::UnknownSelector(sel)),
+        }
+    }
+
+    fn decode_pre_ecotone(data: &[u8]) -> Result<Self, DecodeError> {
+        // ABI decode: (uint64, uint64, uint256, bytes32, uint64, bytes32, uint256, uint256)
+        if data.len() < 8 * 32 { return Err(DecodeError::TooShort); }
+        Ok(Self {
+            number:           u64::from_be_bytes(data[24..32].try_into()?),
+            time:             u64::from_be_bytes(data[56..64].try_into()?),
+            base_fee:         U256::from_be_slice(&data[64..96]).try_into()
+                                .map_err(|_| DecodeError::Overflow)?,
+            block_hash:       B256::from_slice(&data[96..128]),
+            sequence_number:  u64::from_be_bytes(data[152..160].try_into()?),
+            batcher_address:  Address::from_slice(&data[172..192]),
+            l1_fee_overhead:  U256::from_be_slice(&data[192..224]),
+            l1_fee_scalar:    U256::from_be_slice(&data[224..256]),
+            blob_base_fee:    None,
+            base_fee_scalar:  None,
+            blob_base_fee_scalar: None,
+        })
+    }
+
+    fn decode_ecotone(_data: &[u8]) -> Result<Self, DecodeError> {
+        todo!("Ecotone format decode")
+    }
+}
+```
+
+---
+
+### 23.4 `op-alloy-protocol` — Batch & Channel Encoding
+
+```rust
+// crates/op-alloy-protocol/src/batch.rs
+
+use alloy_primitives::Bytes;
+use alloy_eips::BlockNumHash;
+
+/// Batch type — phân biệt hai định dạng batch của OP Stack.
+#[derive(Debug, Clone)]
+pub enum Batch {
+    /// Span Batch — nhiều L2 blocks trong một batch (Ecotone+)
+    Span(SpanBatch),
+    /// Single Batch — một L2 block (trước Ecotone)
+    Single(SingleBatch),
+}
+
+/// Single batch chứa thông tin của một L2 block.
+#[derive(Debug, Clone)]
+pub struct SingleBatch {
+    /// Hash của L1 block parent
+    pub parent_hash:    alloy_primitives::B256,
+    /// Epoch number (L1 block number)
+    pub epoch_num:      u64,
+    /// Hash của L1 epoch block
+    pub epoch_hash:     alloy_primitives::B256,
+    /// Timestamp của L2 block
+    pub timestamp:      u64,
+    /// Danh sách transactions trong L2 block (RLP-encoded)
+    pub transactions:   Vec<Bytes>,
+}
+
+/// Channel — container chứa nhiều batches nén lại, gửi qua L1 calldata hoặc blobs.
+///
+/// SEQUENTICHAIN đọc channels từ L1 DA layer, decode thành batches, rồi execute.
+#[derive(Debug)]
+pub struct Channel {
+    /// Channel ID (8 bytes ngẫu nhiên)
+    pub id:          ChannelId,
+    /// L1 origin block
+    pub origin:      BlockNumHash,
+    /// Dữ liệu compressed (zlib hoặc brotli)
+    pub data:        Vec<u8>,
+    /// Có closed chưa (đã nhận đủ frames)
+    pub is_closed:   bool,
+    /// Số frame đã nhận
+    pub frame_count: u16,
+}
+
+pub type ChannelId = [u8; 16];
+
+/// Frame — đơn vị nhỏ nhất gửi trên L1 calldata.
+/// Nhiều frames ghép lại thành một Channel.
+#[derive(Debug, Clone)]
+pub struct Frame {
+    pub channel_id:   ChannelId,
+    pub frame_number: u16,
+    pub data:         Bytes,
+    pub is_last:      bool,
+}
+
+impl Frame {
+    /// Encode frame thành bytes để gửi lên L1.
+    pub fn encode(&self) -> Bytes {
+        let mut buf = Vec::with_capacity(16 + 2 + 4 + self.data.len() + 1);
+        buf.extend_from_slice(&self.channel_id);
+        buf.extend_from_slice(&self.frame_number.to_be_bytes());
+        buf.extend_from_slice(&(self.data.len() as u32).to_be_bytes());
+        buf.extend_from_slice(&self.data);
+        buf.push(self.is_last as u8);
+        Bytes::from(buf)
+    }
+
+    /// Decode frame từ bytes.
+    pub fn decode(input: &[u8]) -> Result<(Self, &[u8]), FrameDecodeError> {
+        if input.len() < 16 + 2 + 4 + 1 {
+            return Err(FrameDecodeError::TooShort);
+        }
+        let channel_id: ChannelId = input[..16].try_into().unwrap();
+        let frame_number = u16::from_be_bytes(input[16..18].try_into().unwrap());
+        let data_len     = u32::from_be_bytes(input[18..22].try_into().unwrap()) as usize;
+        if input.len() < 22 + data_len + 1 {
+            return Err(FrameDecodeError::DataTruncated);
+        }
+        let data    = Bytes::copy_from_slice(&input[22..22 + data_len]);
+        let is_last = input[22 + data_len] != 0;
+
+        Ok((Self { channel_id, frame_number, data, is_last }, &input[23 + data_len..]))
+    }
+}
+```
+
+---
+
+### 23.5 Integration Test — op-alloy vs OP Sepolia
+
+```rust
+// tests/integration/op_sepolia.rs
+//! Integration test: kết nối OP Sepolia và verify L1BlockInfo.
+//! Skip trên CI nếu không có biến môi trường OP_SEPOLIA_RPC_URL.
+
+use op_alloy::{
+    network::Optimism,
+    provider::OpProviderExt,
+    consensus::L1BlockInfo,
+};
+use alloy::providers::ProviderBuilder;
+
+#[tokio::test]
+#[ignore = "requires OP_SEPOLIA_RPC_URL env var"]
+async fn test_decode_l1_block_info() -> eyre::Result<()> {
+    let rpc_url = std::env::var("OP_SEPOLIA_RPC_URL")?;
+
+    let provider = ProviderBuilder::<_, _, Optimism>::default()
+        .on_http(rpc_url.parse()?);
+
+    // Lấy một block gần đây
+    let block = provider
+        .get_block_by_number(alloy::rpc::types::BlockNumberOrTag::Latest, true)
+        .await?
+        .expect("block not found");
+
+    // Tx đầu tiên luôn là L1 attributes transaction
+    let first_tx = block.transactions.as_transactions().unwrap()[0];
+    let calldata = first_tx.input.as_ref();
+
+    // Decode L1BlockInfo từ calldata
+    let l1_info = L1BlockInfo::decode_calldata(calldata)?;
+
+    assert!(l1_info.number > 0, "L1 block number should be positive");
+    assert!(l1_info.time > 0,   "L1 timestamp should be positive");
+    assert!(!l1_info.block_hash.is_zero(), "L1 block hash should not be zero");
+
+    println!("L1 block #{} at ts {}", l1_info.number, l1_info.time);
+    println!("Base fee: {} wei", l1_info.base_fee);
+
+    Ok(())
+}
+```
+
+---
+
+### 23.6 Tổng kết 4 Giai đoạn — Trạng thái Workspace
+
+Sau khi hoàn thành cả 4 giai đoạn, workspace có cấu trúc cuối cùng:
+
+```
+wikialisalabs-evm/
+├── Cargo.toml                          # workspace (4 giai đoạn)
+│
+├── crates/
+│   │
+│   │   ── TẦNG 1: Core Primitives ──
+│   ├── alloy-primitives/               ✅ Giai đoạn 1
+│   ├── alloy-rlp/                      ✅ Giai đoạn 1
+│   ├── alloy-sol-types/                ✅ Giai đoạn 1
+│   │
+│   │   ── TẦNG 2: Runtime & Data ──
+│   ├── alloy-trie/                     ✅ Giai đoạn 1
+│   ├── revm-primitives/                ✅ Giai đoạn 2
+│   ├── revm-interpreter/               ✅ Giai đoạn 2
+│   ├── revm-precompiles/               ✅ Giai đoạn 2
+│   ├── revm-context/                   ✅ Giai đoạn 2
+│   ├── revm-database/                  ✅ Giai đoạn 2
+│   ├── revm/                           ✅ Giai đoạn 2
+│   ├── evm2-parallel/                  ✅ Giai đoạn 4
+│   ├── evm2-ir/                        ✅ Giai đoạn 4
+│   │
+│   │   ── TẦNG 3: Extensions ──
+│   ├── alloy-eips/                     ✅ Giai đoạn 1
+│   ├── alloy-hardforks/                ✅ Giai đoạn 3
+│   ├── svm-rs/                         ✅ Giai đoạn 2
+│   ├── svm-rs-builds/                  ✅ Giai đoạn 2
+│   ├── op-alloy-consensus/             ✅ Giai đoạn 4
+│   ├── op-alloy-network/               ✅ Giai đoạn 4
+│   ├── op-alloy-protocol/              ✅ Giai đoạn 4
+│   │
+│   │   ── TẦNG 0: Meta-crate ──
+│   ├── alloy-network/                  ✅ Giai đoạn 3
+│   ├── alloy-transport/                ✅ Giai đoạn 3
+│   ├── alloy-transport-http/           ✅ Giai đoạn 3
+│   ├── alloy-transport-ws/             ✅ Giai đoạn 3
+│   ├── alloy-rpc-client/               ✅ Giai đoạn 3
+│   ├── alloy-provider/                 ✅ Giai đoạn 3
+│   ├── alloy-pubsub/                   ✅ Giai đoạn 3
+│   ├── alloy-signer/                   ✅ Giai đoạn 3
+│   ├── alloy-signer-local/             ✅ Giai đoạn 3
+│   ├── alloy-contract/                 ✅ Giai đoạn 3
+│   ├── alloy-node-bindings/            ✅ Giai đoạn 3
+│   └── alloy/                          ✅ Giai đoạn 3
+│
+│   ── TẦNG 4: DevEx ──
+├── docs/                               ✅ Giai đoạn 4
+├── fuzz/                               ✅ Song hành
+├── examples/                           ✅ Song hành
+│
+└── crates/svm-rs-cli/                  ✅ Giai đoạn 2 (binary)
+```
+
+**Tổng số crates:** 35 crates độc lập, tất cả publish được trên `crates.io`.
+
+---
+
+*Wikialisalabs Foundation · RUST_EVM_PLAN v1.3 · 2026-10-31 · root@wikialisalabs.axvn.vn*
