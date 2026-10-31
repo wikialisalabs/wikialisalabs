@@ -1,0 +1,27 @@
+{
+  "name": "@wikialisalabs/web",
+  "version": "6.0.0",
+  "private": true,
+  "description": "Wikialisalabs — Unified web: Docs SPA, Landing, Preview (Astro), Design System source",
+  "author": {
+    "name": "Wikialisalabs",
+    "url": "https://wikialisalabs.axq"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "wikialisalabs": {
+    "workspace": "community-eco",
+    "type": "app",
+    "category": "web"
+  },
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "open": "start http://localhost:3000",
+    "preview:dev": "cd preview && pnpm dev",
+    "preview:build": "cd preview && pnpm build",
+    "ds:check": "cd design-system && pnpm check:hex",
+    "ds:tokens": "cd design-system && pnpm build:tokens"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  }
+}

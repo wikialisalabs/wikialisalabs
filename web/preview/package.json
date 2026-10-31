@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@wikialisalabs/preview",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
   },
   "scripts": {
     "assets": "shx rm -rf tmp-assets && pnpm run css",
-    "css": "tsx ../.build/build-css.ts scss tmp-assets/css --minify",
-    "watch:css": "nodemon --watch scss/ --ext scss --exec \"tsx ../.build/build-css.ts scss public/preview/css\"",
+    "css": "tsx .build/build-css.ts scss tmp-assets/css --minify",
+    "watch:css": "nodemon --watch scss/ --ext scss --exec \"tsx .build/build-css.ts scss public/preview/css\"",
     "watch": "pnpm run watch:css",
     "dev": "concurrently -n astro,css -c blue,magenta \"astro dev\" \"pnpm run watch:css\"",
     "dev:prepare": "pnpm run assets",
@@ -19,7 +19,6 @@
     "type-check": "astro check"
   },
   "dependencies": {
-    "@wikialisalabs/core": "workspace:*",
     "astro": "^7.2.9"
   },
   "devDependencies": {

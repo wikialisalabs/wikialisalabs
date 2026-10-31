@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'preview/pages/**'
+      - 'web/preview/pages/**'
       - '.github/workflows/preview-index.yml'
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
           python3 << 'PYEOF'
           import os, re, json
 
-          pages_dir = "preview/pages"
+          pages_dir = "web/preview/pages"
           pages = []
           for root, dirs, files in os.walk(pages_dir):
             dirs.sort()
@@ -186,19 +186,19 @@ jobs:
           </body>
           </html>"""
 
-          with open("preview/index.html", "w", encoding="utf-8") as fh:
+          with open("web/preview/index.html", "w", encoding="utf-8") as fh:
             fh.write(html)
 
-          print(f"Written preview/index.html ({os.path.getsize('preview/index.html')} bytes)")
+          print(f"Written preview/index.html ({os.path.getsize('web/preview/index.html')} bytes)")
           PYEOF
 
       - name: Commit preview index
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add preview/index.html
+          git add web/preview/index.html
           if git diff --staged --quiet; then
-            echo "No changes to preview/index.html"
+            echo "No changes to web/preview/index.html"
           else
             git commit -m "chore(preview): regenerate index.html [skip ci]"
             git push

@@ -20,6 +20,9 @@
     }
   ],
   "rewrites": [
-    { "source": "/((?!api|_next|preview|public|src|landing|favicon).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!preview|design-system|public|src|landing|favicon|404).*)",
+      "destination": "/index.html"
+    }
   ]
 }

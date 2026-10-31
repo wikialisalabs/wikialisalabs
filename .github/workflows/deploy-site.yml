@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
-      - 'preview/index.html'
+      - 'web/**'
       - 'index.md'
       - '.github/workflows/deploy-site.yml'
   workflow_dispatch:
@@ -15,14 +14,13 @@ permissions:
   pages: write
   id-token: write
 
-# Only one deployment at a time; cancel queued runs but not in-progress
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build docs/ artifact
+    name: Build web/ artifact
     runs-on: ubuntu-latest
 
     steps:
@@ -32,37 +30,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # docs/ is a zero-build static SPA — no npm install needed.
-      # Assemble the full artifact: docs/ + preview index + root index.md
       - name: Prepare artifact
         run: |
           set -e
 
-          # Copy root index.md into docs/ for completeness
-          cp index.md docs/index.md
+          # Copy root index.md into web/ for reference
+          cp index.md web/index.md
 
-          # Include preview page index at docs/preview/
-          mkdir -p docs/preview
-          if [ -f preview/index.html ]; then
-            cp preview/index.html docs/preview/index.html
-            echo "✅ Included preview/index.html"
-          else
-            echo '<meta http-equiv="refresh" content="0;url=https://github.com/wikialisalabs/wikialisalabs/tree/main/preview/pages">' > docs/preview/index.html
-            echo "⚠️  preview/index.html not found — using redirect fallback"
-          fi
-
-          # Copy SVG icon sprite if not already present in docs/
-          if [ -f docs/public/sprites/icons.svg ]; then
-            echo "✅ Icon sprite already present in docs/public/sprites/"
-          elif [ -f tmp_design/public/sprites/icons.svg ]; then
-            mkdir -p docs/public/sprites
-            cp tmp_design/public/sprites/icons.svg docs/public/sprites/icons.svg
-            echo "✅ Copied icons.svg from tmp_design/"
-          fi
-
-          # Ensure the root 404 fallback exists for GitHub Pages SPA
-          if [ ! -f docs/404.html ]; then
-            cat > docs/404.html << 'HTML'
+          # Ensure 404.html exists for SPA routing
+          if [ ! -f web/404.html ]; then
+            cat > web/404.html << 'HTML'
           <!DOCTYPE html>
           <html><head>
             <meta charset="UTF-8">
@@ -75,17 +52,17 @@ jobs:
             <title>Redirecting…</title>
           </head><body>Redirecting…</body></html>
           HTML
-            echo "✅ Generated docs/404.html SPA fallback"
+            echo "✅ Generated web/404.html SPA fallback"
           fi
 
           echo ""
-          echo "Artifact contents:"
-          find docs -type f | sort
+          echo "Artifact contents (top-level):"
+          find web -maxdepth 2 -type f | sort
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: web
 
   deploy:
     name: Deploy to GitHub Pages

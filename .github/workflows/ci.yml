@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  validate-docs:
-    name: Validate docs/ content
+  validate-web:
+    name: Validate web/ content
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +21,7 @@ jobs:
       - name: Check all .md files have frontmatter
         run: |
           failed=0
-          for f in docs/src/content/*.md; do
+          for f in web/src/content/*.md; do
             if ! head -1 "$f" | grep -q "^---"; then
               echo "❌ Missing frontmatter: $f"
               failed=$((failed+1))
@@ -37,7 +37,7 @@ jobs:
       - name: Check JS modules export render()
         run: |
           failed=0
-          for f in docs/src/pages/*.js; do
+          for f in web/src/pages/*.js; do
             if ! grep -q "export.*function render\|export async function render" "$f"; then
               echo "❌ Missing render() export: $f"
               failed=$((failed+1))
@@ -50,7 +50,7 @@ jobs:
       - name: Check router has all routes
         run: |
           for route in overview tokens icons components tlp guidelines changelog zones; do
-            if grep -q "$route" docs/src/router/index.js; then
+            if grep -q "$route" web/src/router/index.js; then
               echo "✅ route /$route"
             else
               echo "❌ route /$route missing from router"
@@ -61,7 +61,7 @@ jobs:
       - name: Check lib exports
         run: |
           for fn in parseFrontmatter renderMd loadMd injectMdStyles; do
-            if grep -q "export.*$fn" docs/src/lib/md.js; then
+            if grep -q "export.*$fn" web/src/lib/md.js; then
               echo "✅ md.js exports $fn"
             else
               echo "❌ md.js missing export: $fn"
@@ -69,7 +69,7 @@ jobs:
             fi
           done
           for fn in ContribCard VoteBar SubmitForm CommentThread StatusBoard injectContribStyles mountAll; do
-            if grep -q "export.*$fn\|export function $fn\|export async function $fn" docs/src/lib/contrib.js; then
+            if grep -q "export.*$fn\|export function $fn\|export async function $fn" web/src/lib/contrib.js; then
               echo "✅ contrib.js exports $fn"
             else
               echo "❌ contrib.js missing export: $fn"
@@ -79,7 +79,7 @@ jobs:
 
       - name: Check token CSS files
         run: |
-          for f in docs/src/style/tokens-primitive.css docs/src/style/tokens-semantic.css docs/src/style/tokens-component.css; do
+          for f in web/src/style/tokens-primitive.css web/src/style/tokens-semantic.css web/src/style/tokens-component.css; do
             if [ -f "$f" ]; then
               echo "✅ $f exists"
             else
@@ -87,6 +87,29 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Check required web/ structure
+        run: |
+          required=(
+            "web/index.html"
+            "web/landing.html"
+            "web/404.html"
+            "web/public/sprites/icons.svg"
+            "web/preview/index.html"
+            "web/design-system/tokens/primitive.css"
+            "web/design-system/tokens/semantic.css"
+            "web/design-system/tokens/component.css"
+          )
+          failed=0
+          for f in "${required[@]}"; do
+            if [ -f "$f" ]; then
+              echo "✅ $f"
+            else
+              echo "❌ Missing: $f"
+              failed=$((failed+1))
+            fi
+          done
+          if [ "$failed" -gt 0 ]; then exit 1; fi
 
       - name: Check no broken internal links in index.md
         run: |
@@ -117,7 +140,9 @@ jobs:
           echo "| Router routes | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| lib exports | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| Token CSS files | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| web/ structure | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Docs files:** $(find docs -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "**Content pages:** $(find docs/src/content -name '*.md' | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "**Preview pages:** $(find preview/pages -name '*.astro' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "**web/ files:** $(find web -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "**Content pages:** $(find web/src/content -name '*.md' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview pages:** $(find web/preview/pages -name '*.astro' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "**DS components:** $(find web/design-system/src/components -name '*.tsx' 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY

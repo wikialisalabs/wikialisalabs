@@ -1,12 +1,10 @@
-name: Build & Validate Docs
+name: Build & Validate Web
 
 on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
-      - 'tmp_design/**'
-      - 'preview/pages/**'
+      - 'web/**'
       - '.github/workflows/build-docs.yml'
   pull_request:
     branches: [main]
@@ -15,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  validate-docs:
-    name: Validate docs/ structure
+  validate-web:
+    name: Validate web/ structure
     runs-on: ubuntu-latest
 
     steps:
@@ -27,23 +25,30 @@ jobs:
         run: |
           set -e
           required=(
-            "docs/index.html"
-            "docs/landing.html"
-            "docs/src/router/index.js"
-            "docs/src/style/shell.css"
-            "docs/src/style/pages.css"
-            "docs/src/style/tokens-primitive.css"
-            "docs/src/style/tokens-semantic.css"
-            "docs/src/style/tokens-component.css"
-            "docs/src/content/overview.md"
-            "docs/src/content/tokens.md"
-            "docs/src/content/icons.md"
-            "docs/src/content/components.md"
-            "docs/src/content/tlp.md"
-            "docs/src/content/changelog.md"
-            "docs/src/pages/tlp.js"
-            "docs/src/pages/guidelines.js"
-            "docs/src/pages/changelog.js"
+            "web/index.html"
+            "web/landing.html"
+            "web/404.html"
+            "web/src/router/index.js"
+            "web/src/style/shell.css"
+            "web/src/style/pages.css"
+            "web/src/style/tokens-primitive.css"
+            "web/src/style/tokens-semantic.css"
+            "web/src/style/tokens-component.css"
+            "web/src/content/overview.md"
+            "web/src/content/tokens.md"
+            "web/src/content/icons.md"
+            "web/src/content/components.md"
+            "web/src/content/tlp.md"
+            "web/src/content/changelog.md"
+            "web/src/pages/tlp.js"
+            "web/src/pages/guidelines.js"
+            "web/src/pages/changelog.js"
+            "web/public/sprites/icons.svg"
+            "web/preview/index.html"
+            "web/design-system/tokens/primitive.css"
+            "web/design-system/tokens/semantic.css"
+            "web/design-system/tokens/component.css"
+            "web/design-system/package.json"
           )
           failed=0
           for f in "${required[@]}"; do
@@ -62,7 +67,7 @@ jobs:
       - name: Check all content .md files have frontmatter
         run: |
           failed=0
-          for f in docs/src/content/*.md; do
+          for f in web/src/content/*.md; do
             if ! head -1 "$f" | grep -q "^---"; then
               echo "❌ Missing frontmatter: $f"
               failed=$((failed+1))
@@ -70,15 +75,12 @@ jobs:
               echo "✅ $f"
             fi
           done
-          if [ $failed -gt 0 ]; then
-            echo "$failed file(s) missing frontmatter"
-            exit 1
-          fi
+          if [ $failed -gt 0 ]; then exit 1; fi
 
       - name: Check JS pages export render()
         run: |
           failed=0
-          for f in docs/src/pages/*.js; do
+          for f in web/src/pages/*.js; do
             if ! grep -q "export.*function render\|export async function render" "$f"; then
               echo "❌ Missing render() export: $f"
               failed=$((failed+1))
@@ -90,7 +92,7 @@ jobs:
 
       - name: Check router contains all required routes
         run: |
-          router="docs/src/router/index.js"
+          router="web/src/router/index.js"
           required_routes=("/" "/tokens" "/icons" "/components" "/tlp" "/guidelines" "/changelog" "/zones")
           failed=0
           for route in "${required_routes[@]}"; do
@@ -105,7 +107,7 @@ jobs:
 
       - name: Check token CSS files have :root block
         run: |
-          for f in docs/src/style/tokens-primitive.css docs/src/style/tokens-semantic.css docs/src/style/tokens-component.css; do
+          for f in web/src/style/tokens-primitive.css web/src/style/tokens-semantic.css web/src/style/tokens-component.css; do
             if grep -q ":root" "$f"; then
               echo "✅ $f has :root"
             else
@@ -114,16 +116,18 @@ jobs:
             fi
           done
 
-      - name: Count content files
+      - name: Summary
         run: |
-          md_count=$(find docs/src/content -name "*.md" | wc -l)
-          page_count=$(find docs/src/pages -name "*.js" | wc -l)
-          echo "📄 Markdown content files: $md_count"
-          echo "📦 Page JS modules: $page_count"
-          echo "### ✅ Build & Validate Docs passed" >> $GITHUB_STEP_SUMMARY
+          md_count=$(find web/src/content -name "*.md" | wc -l)
+          page_count=$(find web/src/pages -name "*.js" | wc -l)
+          astro_count=$(find web/preview/pages -name "*.astro" | wc -l)
+          ds_count=$(find web/design-system/src/components -name "*.tsx" 2>/dev/null | wc -l)
+          echo "### ✅ Build & Validate Web passed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Item | Count |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
           echo "| Content .md files | $md_count |" >> $GITHUB_STEP_SUMMARY
           echo "| Page modules | $page_count |" >> $GITHUB_STEP_SUMMARY
-          echo "| Preview .astro pages | $(find preview/pages -name '*.astro' | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Preview .astro pages | $astro_count |" >> $GITHUB_STEP_SUMMARY
+          echo "| Design System components | $ds_count |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total web/ files | $(find web -type f | wc -l) |" >> $GITHUB_STEP_SUMMARY

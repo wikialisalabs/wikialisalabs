@@ -17,13 +17,19 @@
   publish = "."
   command = ""
 
+# SPA fallback — rewrite tất cả route không phải file vào index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Language = ["en", "vi"]}
+
 [[redirects]]
   from = "/preview"
   to = "/preview/"
   status = 301
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
+  from = "/design-system"
+  to = "/design-system/"
+  status = 301

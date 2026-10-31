@@ -11,7 +11,7 @@ import { Worker } from 'node:worker_threads'
 // Vite's module runner, which is already closed by the time astro:build:done runs
 // (the config is bundled by vite-node because it imports a .ts module).
 import prettier from 'prettier'
-import { copyAssets } from '../.build/copy-assets'
+import { copyAssets } from './.build/copy-assets'
 
 /** @param {string} p */
 const path = (p) => fileURLToPath(new URL(p, import.meta.url))
@@ -86,11 +86,11 @@ export default defineConfig({
     resolve: {
       alias: {
         // Demo data in shared/data (single source of truth).
-        '@data': fileURLToPath(new URL('../shared/data', import.meta.url)),
+        '@data': fileURLToPath(new URL('./shared/data', import.meta.url)),
         // Components/lib shared with docs.
-        '@shared': fileURLToPath(new URL('../shared', import.meta.url)),
-        '@ui': fileURLToPath(new URL('../shared/ui', import.meta.url)),
-        '@components': fileURLToPath(new URL('../shared/components', import.meta.url)),
+        '@shared': fileURLToPath(new URL('./shared', import.meta.url)),
+        '@ui': fileURLToPath(new URL('./shared/ui', import.meta.url)),
+        '@components': fileURLToPath(new URL('./shared/components', import.meta.url)),
       },
     },
   },
@@ -123,7 +123,7 @@ export default defineConfig({
         {
           // static assets (photos, avatars, tracks, brand svgs...). The real source,
           // because preview/static is a symlink that may not survive deployment packaging.
-          from: path('../shared/static'),
+          from: path('./shared/static'),
           to: path('./public/static'),
           label: 'shared assets',
         },
@@ -134,8 +134,8 @@ export default defineConfig({
       // Watch the real core/dist, not the node_modules symlink the startup copy
       // reads from — same directory.
       syncDirs: [
-        { from: path('../core/dist'), to: path('./public/dist') },
-        { from: path('../shared/static'), to: path('./public/static') },
+        { from: path('./node_modules/@wikialisalabs/core/dist'), to: path('./public/dist') },
+        { from: path('./shared/static'), to: path('./public/static') },
       ],
       // watch:css writes straight into public/preview — the file is already
       // in place, but Astro does not reload the browser on public/ changes.
